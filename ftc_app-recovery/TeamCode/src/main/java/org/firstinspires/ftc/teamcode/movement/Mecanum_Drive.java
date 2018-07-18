@@ -17,32 +17,28 @@ public class Mecanum_Drive {
     private final double drivePidIntMax = 105;  // Limit to max speed.
     private final double driveOutMax = 1.0;  // Motor output limited to 100%.
 
-    DcMotor up_left;
-    DcMotor up_right;
-    DcMotor back_left;
-    DcMotor back_right;
+    DcMotor motors[];
 
     private Pid leftDrive = null;
     private Pid rightDrive = null;
 
-    Mecanum_Drive(DcMotor names[]){
-        up_left = names[0];
-        up_right = names[1];
-        back_left = names[2];
-        back_right = names[3];
+    public Mecanum_Drive(DcMotor names[]){
+        motors = names.clone();
+        motors[0].setDirection(DcMotor.Direction.REVERSE);
+        motors[2].setDirection(DcMotor.Direction.REVERSE);
     }
 
     public void drive(double r, double angle, double rightX){
-        double robotAngle = angle - (Math.PI / 4);
+        double robotAngle = angle;
 
         final double v1 = r * Math.cos(robotAngle) + rightX;
         final double v2 = r * Math.sin(robotAngle) - rightX;
         final double v3 = r * Math.sin(robotAngle) + rightX;
         final double v4 = r * Math.cos(robotAngle) - rightX;
 
-        up_left.setPower(v1);
-        up_right.setPower(v2);
-        back_left.setPower(v3);
-        back_right.setPower(v4);
+        motors[0].setPower(v1);
+        motors[1].setPower(v2);
+        motors[2].setPower(v3);
+        motors[3].setPower(v4);
     }
 }
