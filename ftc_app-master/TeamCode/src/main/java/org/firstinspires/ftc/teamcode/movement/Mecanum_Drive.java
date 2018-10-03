@@ -4,6 +4,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.control.Pid;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 public class Mecanum_Drive {
     private final double ticksPerRevolution = 1000;  // Get for your motor and gearing.
     private double prevTime;  // The last time loop() was called.
@@ -49,14 +52,21 @@ public class Mecanum_Drive {
     public void drive(double r, double angle, double rightX){
         double robotAngle = angle;
 
-        final double v1 = r * Math.cos(robotAngle) + rightX;
-        final double v2 = r * Math.sin(robotAngle) - rightX;
-        final double v3 = r * Math.sin(robotAngle) + rightX;
-        final double v4 = r * Math.cos(robotAngle) - rightX;
+        Double[] v = new Double[4];
+        double max = 0.0;
+        double scale = 1.0;
 
-        motors[0].setPower(v1);
-        motors[1].setPower(v2);
-        motors[2].setPower(v3);
-        motors[3].setPower(v4);
+        v[0] = Math.cos(robotAngle) + rightX;
+        v[1] = Math.sin(robotAngle) - rightX;
+        v[2] = Math.sin(robotAngle) + rightX;
+        v[3] = Math.cos(robotAngle) - rightX;
+
+        max = Collections.max(Arrays.asList(v));
+        scale = Math.abs(r / max);
+
+        for (int i = 0; i < 4; i++){
+            //v[i] *= scale;
+            motors[i].setPower(v[i]);
+        }
     }
 }

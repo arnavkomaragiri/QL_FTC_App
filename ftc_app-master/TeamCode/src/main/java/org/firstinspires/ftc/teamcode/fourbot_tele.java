@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Bitmap;
+import android.graphics.Color;
+
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -21,6 +24,7 @@ public class fourbot_tele extends OpMode{
     DcMotor arm;
     DcMotor sweeper;
     Mecanum_Drive drive;
+
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
         motors[1] = hardwareMap.dcMotor.get("up_right");
@@ -34,17 +38,46 @@ public class fourbot_tele extends OpMode{
     }
     public void loop(){
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-        double robotAngle = Math.atan2(gamepad1.left_stick_y, -gamepad1.left_stick_x) - (Math.PI / 4);
+        double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
         double rightX = gamepad1.right_stick_x;
 
         drive.drive(r, robotAngle, rightX);
 
-        arm.setPower(gamepad2.right_stick_y);
-        sweeper.setPower(gamepad2.right_trigger);
+        //*Arm Motion
+        arm.setPower(gamepad2.right_stick_y * 0.6);
+        if (gamepad2.dpad_up){
+            arm.setPower(0.6);
+        }
+        else if (gamepad2.dpad_down){
+            arm.setPower(-0.6);
+        }
+        else{
+            arm.setPower(0.0);
+        }
+        sweeper.setPower(-gamepad2.right_trigger);
 
         telemetry.addData("Angle:", ((180 * robotAngle) / Math.PI));
     }
 
+    public void processBitmap(Bitmap bmp){
+        for (int i = 0; i < bmp.getHeight(); i++){
+            for (int j = 0; j < bmp.getWidth(); j++){
+                int pixel = bmp.getPixel(j, i);
 
+                int red = Color.red(pixel);
+                int green = Color.green(pixel);
+                int blue = Color.blue(pixel);
+                float hsv[] = new float[3];
+
+                Color.RGBToHSV(red, green, blue, hsv);
+
+                if (hsv[0] < 65 && hsv[0] > 20){ //todo: tune hsv thresholds
+                    hsv[0] = 50;
+                    pixel = Color.HSVToColor(hsv);
+                    bmp.setPixel(j, i, pixel);
+                }
+            }
+        }
+    }
 }
 

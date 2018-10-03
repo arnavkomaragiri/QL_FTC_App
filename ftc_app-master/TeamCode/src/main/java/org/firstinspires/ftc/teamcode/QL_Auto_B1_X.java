@@ -195,7 +195,7 @@ public class QL_Auto_B1_X extends OpMode{
 
         parameters.vuforiaLicenseKey = "AdxZ3kj/////AAAAGVcZGhm+xkRnm25bq3Zjd2RSQ2pfdOy7+EfbjO8XJD7NFRkWQ0Xx0uzVcMSKKXYgimvMnjKHFiFnaRiubni6joz57M2ei/tPxb54q7cGy6O/Yw9C9EE5OGGRaVppUDSG9hV7iWCpCb7PS3OOj9ST3grD+GfojQZOxaugVLxwqlNXF7KRODkbvBXpQ5bUGiRlL0k3AlhgUbHnlPes0hMQt/uZ+Dzg56ixG6W1SAbZpK6jubVTJZ9uOQ25hevaP5QF1nrpLQEWvqusNwc+W/BNL7//+hePPnRYZU4c9i0crjyG7R0f7UgQ/vLWppNTYnu6H8v/rY34rIIGyyJ8iXSoHSCcj0T9WObHDB3DHQeYQI+G";
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
-        this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        this.vuforia = ClassFactory.getInstance().createVuforia(parameters);
 
         telemetry.addData(String.format("8bit=0x%02x", colorsensor.getI2cAddress().get8Bit()), "0");
 
