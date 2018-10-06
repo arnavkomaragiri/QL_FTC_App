@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
+import org.firstinspires.ftc.teamcode.wrapper.Arm;
 
 /**
  * Created by arnav on 10/22/2017.
@@ -21,9 +22,8 @@ import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
 @TeleOp(name="four_bot", group="Teleop")
 public class fourbot_tele extends OpMode{
     DcMotor motors[] = new DcMotor[4];
-    DcMotor arm;
-    DcMotor sweeper;
     Mecanum_Drive drive;
+    Arm arm;
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
@@ -31,30 +31,16 @@ public class fourbot_tele extends OpMode{
         motors[2] = hardwareMap.dcMotor.get("back_left");
         motors[3] = hardwareMap.dcMotor.get("back_right");
 
-        arm = hardwareMap.get(DcMotor.class, "arm");
-        sweeper = hardwareMap.get(DcMotor.class, "sweeper");
+        arm = new Arm(hardwareMap.get(DcMotor.class, "sweeper"), hardwareMap.get(DcMotor.class, "arm"));
 
         drive = new Mecanum_Drive(motors);
     }
     public void loop(){
-        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
         double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
-        double rightX = gamepad1.right_stick_x;
-
-        drive.drive(r, robotAngle, rightX);
+        drive.drive(gamepad1);
 
         //*Arm Motion
-        arm.setPower(gamepad2.right_stick_y * 0.6);
-        if (gamepad2.dpad_up){
-            arm.setPower(0.6);
-        }
-        else if (gamepad2.dpad_down){
-            arm.setPower(-0.6);
-        }
-        else{
-            arm.setPower(0.0);
-        }
-        sweeper.setPower(-gamepad2.right_trigger);
+        arm.move(gamepad2);
 
         telemetry.addData("Angle:", ((180 * robotAngle) / Math.PI));
     }
