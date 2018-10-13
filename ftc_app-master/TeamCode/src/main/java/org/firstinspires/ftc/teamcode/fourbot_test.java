@@ -24,9 +24,9 @@ public class fourbot_test extends OpMode{
     }
 
     public void loop(){
-        up_left.setPower(1.0);
-        up_right.setPower(1.0);
-        back_left.setPower(1.0);
-        back_right.setPower(1.0);
+        up_left.setPower(0.5);
+        up_right.setPower(0.5);
+        back_left.setPower(0.5);
+        back_right.setPower(0.5);
     }
 }

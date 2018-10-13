@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -39,7 +40,7 @@ public class mecanum_tele extends OpMode{
         motors[3] = hardwareMap.get(DcMotor.class, "back_right");
         slide = hardwareMap.get(DcMotor.class, "slide");
 
-        drivetrain = new Mecanum_Drive(motors);
+        drivetrain = new Mecanum_Drive(motors, hardwareMap.get(ModernRoboticsI2cGyro.class, "gyro"));
 
         grab_left = hardwareMap.servo.get("grab_left");
         grab_right = hardwareMap.servo.get("grab_right");
@@ -54,7 +55,7 @@ public class mecanum_tele extends OpMode{
         double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - (Math.PI / 4);
         double rightX = gamepad1.right_stick_x;
 
-        drivetrain.drive(r * speed, robotAngle, rightX);
+        drivetrain.drive(r * speed, robotAngle, rightX, gamepad1.right_stick_y);
         slide.setPower(gamepad2.right_stick_y);
 
         if (gamepad2.x) {

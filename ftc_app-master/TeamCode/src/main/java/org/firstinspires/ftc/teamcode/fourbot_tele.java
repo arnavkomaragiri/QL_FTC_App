@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -11,19 +12,21 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.RobotLog;
 
+import org.firstinspires.ftc.teamcode.control.Pose2d;
 import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
-import org.firstinspires.ftc.teamcode.wrapper.Arm;
 
 /**
  * Created by arnav on 10/22/2017.
  */
 //@Disabled
-@TeleOp(name="four_bot", group="Teleop")
+@TeleOp(name="four_bot_tele", group="Teleop")
 public class fourbot_tele extends OpMode{
     DcMotor motors[] = new DcMotor[4];
+    DcMotor arm;
+    DcMotor sweeper;
     Mecanum_Drive drive;
-    Arm arm;
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
@@ -31,18 +34,46 @@ public class fourbot_tele extends OpMode{
         motors[2] = hardwareMap.dcMotor.get("back_left");
         motors[3] = hardwareMap.dcMotor.get("back_right");
 
-        arm = new Arm(hardwareMap.get(DcMotor.class, "sweeper"), hardwareMap.get(DcMotor.class, "arm"));
+        //arm = hardwareMap.get(DcMotor.class, "arm");
+        //sweeper = hardwareMap.get(DcMotor.class, "sweeper");
 
-        drive = new Mecanum_Drive(motors);
+        drive = new Mecanum_Drive(motors, hardwareMap.get(ModernRoboticsI2cGyro.class, "gyro"));
     }
     public void loop(){
-        double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
-        drive.drive(gamepad1);
+        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
+        double robotAngle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+        double rightX = gamepad1.right_stick_x;
+        double rightY = gamepad1.right_stick_y;
+
+        drive.drive(r, robotAngle, rightX, rightY);
 
         //*Arm Motion
-        arm.move(gamepad2);
+        /*arm.setPower(gamepad2.right_stick_y * 0.6);
+        if (gamepad2.dpad_up){
+            arm.setPower(0.6);
+        }
+        else if (gamepad2.dpad_down){
+            arm.setPower(-0.6);
+        }
+        else{
+            arm.setPower(0.0);
+        }
+        sweeper.setPower(-gamepad2.right_trigger);*/
+        Pose2d pose = drive.track();
 
         telemetry.addData("Angle:", ((180 * robotAngle) / Math.PI));
+        telemetry.addData("Up Left: ", Double.toString(motors[0].getPower()));
+        telemetry.addData("Up Right: ", Double.toString(motors[1].getPower()));
+        telemetry.addData("Back Left: ", Double.toString(motors[2].getPower()));
+        telemetry.addData("Back Right: ", Double.toString(motors[3].getPower()));
+        telemetry.addData("X: ", pose.x());
+        telemetry.addData("Y: ", pose.y());
+        telemetry.addData("Heading: ", pose.heading());
+    }
+    private void logMessage( String sMsgHeader, String sMsg)
+    {
+        telemetry.addData(sMsgHeader, sMsg);
+        RobotLog.ii("8719", getRuntime()+ "%s :: %s", sMsgHeader, sMsg);
     }
 
     public void processBitmap(Bitmap bmp){

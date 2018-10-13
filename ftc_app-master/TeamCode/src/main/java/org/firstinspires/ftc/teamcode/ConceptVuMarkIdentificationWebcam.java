@@ -28,6 +28,7 @@
  */
 package org.firstinspires.ftc.teamcode;
 
+import com.disnodeteam.dogecv.Dogeforia;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -78,7 +79,7 @@ public class ConceptVuMarkIdentificationWebcam extends LinearOpMode {
      * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
      * localization engine.
      */
-    VuforiaLocalizer vuforia;
+    Dogeforia vuforia;
 
     /**
      * This is the webcam we are to use. As with other hardware devices such as motors and
@@ -86,13 +87,13 @@ public class ConceptVuMarkIdentificationWebcam extends LinearOpMode {
      */
     WebcamName webcamName;
 
+
     @Override public void runOpMode() {
 
         /*
          * Retrieve the camera we are to use.
          */
         webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
-
         /*
          * To start up Vuforia, tell it the view that we wish to use for camera monitor (on the RC phone);
          * If no camera monitor is desired, use the parameterless constructor instead (commented out below).
@@ -123,7 +124,7 @@ public class ConceptVuMarkIdentificationWebcam extends LinearOpMode {
          * we use the same logic as in {@link ConceptVuforiaNavigationWebcam}.
          */
         parameters.cameraName = webcamName;
-        this.vuforia = ClassFactory.getInstance().createVuforia(parameters);
+        this.vuforia = new Dogeforia(parameters);//ClassFactory.getInstance().createVuforia(parameters);
 
         /**
          * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
