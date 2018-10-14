@@ -50,10 +50,10 @@ import static com.vuforia.Vuforia.setFrameFormat;
  */
 
 public class Dogeforia extends VuforiaLocalizerImpl {
-    DogeCVDetector detector;
-    DrawViewSource displayView;
-    boolean dogeCVEnabled;
-    boolean showDebug = false;
+    DogeCVDetector detector;   // Setting a detector
+    DrawViewSource displayView;    //Starting the camera display
+    boolean dogeCVEnabled;   //Creating a checker for the Camera
+    boolean showDebug = false;     //Turning off showDebug
 
     Thread workerThread;
     Bitmap outputImage;
