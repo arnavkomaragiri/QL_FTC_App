@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.movement;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.control.Pid;
@@ -93,6 +94,44 @@ public class Mecanum_Drive{
         }
     }
 
+    public void drive(Gamepad gamepad1) {
+        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
+        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+        double rightX = gamepad1.right_stick_x;
+        double rightY = gamepad1.right_stick_y;
+
+        robotHeading = angle;
+        double robotAngle = angle - Math.PI / 4;
+        double max = -1.0;
+
+        Double[] v = {0.0, 0.0, 0.0, 0.0};
+
+        v[0] = (r * Math.cos(robotAngle)) + rightX;
+        v[1] = (r * Math.sin(robotAngle)) - rightX;
+        v[2] = (r * Math.sin(robotAngle)) + rightX;
+        v[3] = (r * Math.cos(robotAngle)) - rightX;
+
+        for (int i = 0; i < 4; i++) {
+            if (v[i] > max) {
+                max = v[i];
+            }
+        }
+        if (max <= 0) {
+            max = 1;
+        }
+        //System.out.println();
+        double scale = ((r == 0) ? Math.hypot(rightX, rightY) : r) / ((max == 0) ? ((r == 0) ? Math.hypot(rightX, rightY) : r) : max);
+        //System.out.println(scale);
+        //System.out.println();
+
+        for (int i = 0; i < 4; i++) {
+            v[i] *= scale;
+            //System.out.println(v[i]);
+            v[i] = Range.clip(v[i], -1.0, 1.0);
+            motors[i].setPower(v[i]);
+        }
+    }
+
     public Pose2d track(){
         Vector2d[] v = new Vector2d[4];
 
@@ -126,5 +165,9 @@ public class Mecanum_Drive{
     }
     public double inverse(double heading){
         return heading * -1;
+    }
+
+    public double getRobotHeading(){
+        return this.robotHeading;
     }
 }

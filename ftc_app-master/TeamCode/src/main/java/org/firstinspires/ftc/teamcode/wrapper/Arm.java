@@ -29,10 +29,10 @@ public class Arm {
     
     public void move(Gamepad g){
         arm.setPower(g.right_stick_y * 0.6);
-        if (g.dpad_up){
+        if (g.y){
             arm.setPower(0.6);
         }
-        else if (g.dpad_down){
+        else if (g.y){
             arm.setPower(-0.6);
         }
         else{
