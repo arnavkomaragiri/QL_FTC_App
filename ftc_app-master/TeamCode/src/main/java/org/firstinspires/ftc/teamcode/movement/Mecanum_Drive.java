@@ -39,6 +39,7 @@ public class Mecanum_Drive{
     public Mecanum_Drive(DcMotor names[], ModernRoboticsI2cGyro gyro){
         motors = names.clone();
         this.gyro = gyro;
+        this.gyro.calibrate();
         motors[0].setDirection(DcMotor.Direction.REVERSE);
         motors[2].setDirection(DcMotor.Direction.REVERSE);
     }
@@ -61,7 +62,12 @@ public class Mecanum_Drive{
         return output;
     }
 
-    public void drive(double r, double angle, double rightX, double rightY) {
+    public void drive(Gamepad gamepad1) {
+        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
+        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+        double rightX = gamepad1.right_stick_x;
+        double rightY = gamepad1.right_stick_y;
+
         robotHeading = angle;
         double robotAngle = angle - Math.PI / 4;
         double max = -1.0;
@@ -94,12 +100,7 @@ public class Mecanum_Drive{
         }
     }
 
-    public void drive(Gamepad gamepad1) {
-        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
-        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
-        double rightX = gamepad1.right_stick_x;
-        double rightY = gamepad1.right_stick_y;
-
+    public void drive(double r, double angle, double rightX, double rightY) {
         robotHeading = angle;
         double robotAngle = angle - Math.PI / 4;
         double max = -1.0;
@@ -142,8 +143,9 @@ public class Mecanum_Drive{
         double x = 0.0, y = 0.0;
 
         for (int i = 0; i < 4; i++){
-            double distance = motors[i].getCurrentPosition() - prevpos[i];
-            v[i] = new Vector2d((i == 1 || i == 2) ? distance * -1 : distance, distance);
+            double distance = (motors[i].getCurrentPosition() - prevpos[i]) / 560;
+            distance *= 4 * Math.PI;
+            v[i] = new Vector2d(distance, (i == 1 || i == 2) ? distance * -1 : distance);
             prevpos[i] = motors[i].getCurrentPosition();
         }
 
@@ -154,7 +156,7 @@ public class Mecanum_Drive{
         double startx = center.norm() * Math.cos(heading + robotHeading);
         double starty = center.norm() * Math.sin(heading + robotHeading);
 
-        p = new Pose2d(p.x() + startx, p.y() + starty, heading);
+        p = new Pose2d(p.x() + starty, p.y() + startx, heading);
         return p;
     }
     public double invert(double heading){
@@ -169,5 +171,22 @@ public class Mecanum_Drive{
 
     public double getRobotHeading(){
         return this.robotHeading;
+    }
+
+    public double getMinimumDistance(){
+        double min = 9999;
+        for (int i = 0; i < 4; i++){
+            double distance = motors[i].getCurrentPosition() - prevpos[i];
+            if (Math.abs(distance) < min){
+                min = distance;
+            }
+        }
+        return min;
+    }
+
+    public void enable(){
+        for (int i = 0; i < 4; i++){
+            motors[i].setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
     }
 }

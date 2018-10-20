@@ -79,7 +79,7 @@ public class ConceptVuMarkIdentificationWebcam extends LinearOpMode {
      * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
      * localization engine.
      */
-    Dogeforia vuforia;
+    VuforiaLocalizer vuforia;
 
     /**
      * This is the webcam we are to use. As with other hardware devices such as motors and

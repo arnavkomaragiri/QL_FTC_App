@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -31,6 +32,12 @@ public class fourbot_tele extends OpMode{
     Mecanum_Drive drive;
     Hanger hanger;
     Arm arm;
+    Servo box_left;
+    Servo box_right;
+    boolean flip = false;
+    ElapsedTime cooldown = new ElapsedTime();
+    ElapsedTime precision = new ElapsedTime();
+    Pose2d pose = new Pose2d(0, 0, 0);
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
@@ -40,12 +47,18 @@ public class fourbot_tele extends OpMode{
 
         hanger = new Hanger(hardwareMap);
 
+        arm1 = hardwareMap.get(DcMotor.class, "arm");
+        sweeper = hardwareMap.get(DcMotor.class, "sweeper");
+
+        box_left = hardwareMap.get(Servo.class, "box_left");
+        box_right = hardwareMap.get(Servo.class, "box_right");
+        box_left.setPosition(0.9);
+        box_right.setPosition(0.1);
+
         arm = new Arm(sweeper, arm1);
 
-        //arm = hardwareMap.get(DcMotor.class, "arm");
-        //sweeper = hardwareMap.get(DcMotor.class, "sweeper");
-
         drive = new Mecanum_Drive(motors, hardwareMap.get(ModernRoboticsI2cGyro.class, "gyro"));
+        //drive.enable();
     }
     public void loop(){
         drive.drive(gamepad1);
@@ -53,8 +66,26 @@ public class fourbot_tele extends OpMode{
         hanger.operate(gamepad2);
         arm.move(gamepad2);
 
-        Pose2d pose = drive.track();
+        if (precision.time() > 0.5) {
+            pose = drive.track();
+            precision.reset();
+        }
 
+        if (gamepad2.left_bumper && cooldown.time() > 1){
+            if (!flip){
+                box_left.setPosition(0.1);
+                box_right.setPosition(0.9);
+                flip = true;
+            }
+            else {
+                box_left.setPosition(0.9);
+                box_right.setPosition(0.1);
+                flip = false;
+            }
+            cooldown.reset();
+        }
+
+        telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
         telemetry.addData("Angle:", Math.toDegrees(drive.getRobotHeading()));
         telemetry.addData("Up Left: ", Double.toString(motors[0].getPower()));
         telemetry.addData("Up Right: ", Double.toString(motors[1].getPower()));
@@ -63,7 +94,11 @@ public class fourbot_tele extends OpMode{
         telemetry.addData("X: ", pose.x());
         telemetry.addData("Y: ", pose.y());
         telemetry.addData("Heading: ", pose.heading());
-
+        telemetry.addData("Time: ", precision.time());
+        telemetry.addData("Min: ", drive.getMinimumDistance());
+        for (int i = 0; i < 4; i++){
+            telemetry.addData("Pos: ", Double.toString((Math.PI * drive.getMotors()[i].getCurrentPosition()) / 140));
+        }
     }
     private void logMessage( String sMsgHeader, String sMsg)
     {

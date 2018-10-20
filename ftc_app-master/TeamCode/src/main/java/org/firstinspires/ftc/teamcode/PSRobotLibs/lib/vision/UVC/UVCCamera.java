@@ -39,6 +39,7 @@ public class UVCCamera {
     CameraCharacteristics characteristics;
     int imageFormatWanted = ImageFormat.YUY2;
     Camera camera;
+    boolean stop = false;
 
     Size sizeWanted;
     UVCCamera.Callback frameCallback;
@@ -65,6 +66,10 @@ public class UVCCamera {
             ret = new UVCCamera(cameraManager,cameraName, callback);
         }
         return ret;
+    }
+
+    public void stop(){
+        stop = true;
     }
 
     public void start(){
@@ -169,6 +174,11 @@ public class UVCCamera {
                 finally
                 {
                     // Shutdown the camera
+                    session.stopCapture();
+                    session.close();
+                    camera.close();
+                }
+                if (stop){
                     session.stopCapture();
                     session.close();
                     camera.close();

@@ -29,16 +29,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+
 @TeleOp(name = "UVC-Camera", group = "test")
-public class test extends OpMode implements UVCCamera.Callback {
+public class test extends OpMode implements UVCCamera.Callback { //necessary for onFrame method
 
     UVCCamera camera;
     Bitmap bm;
-    int sampPos = 1; //0 = Left, 1 = center
+    int sampPos = -1; //0 = Left, 1 = center
     int sampleNow;
     double angle;
     static String load = "";
     boolean save = false;
+
+    double locationX = 0.0;
+    double posX = 0.0;
+    double size = 0.0;
 
     static {
         if (!OpenCVLoader.initDebug()) {
@@ -64,6 +69,10 @@ public class test extends OpMode implements UVCCamera.Callback {
 
     @Override
     public void loop() {
+        telemetry.addData("Pos: ", sampPos);
+        telemetry.addData("Location", locationX);
+        telemetry.addData("Position", posX);
+        telemetry.addData("Size", size);
         /*if (gamepad1.a){
             switch (sampleNow){
                 case 0:
@@ -82,7 +91,7 @@ public class test extends OpMode implements UVCCamera.Callback {
             sampleNow = sampPos;
         }*/
         //if(data == null){
-            telemetry.addData("Error","data is null");
+            //telemetry.addData("Error","data is null");
 
         /*}else {
             try {
@@ -115,9 +124,13 @@ public class test extends OpMode implements UVCCamera.Callback {
         }*/
     }
 
+    public void stop(){
+
+    }
 
     @Override
     public Bitmap onFrame(Bitmap bm) {
+        telemetry.addData("Entered", "Camera");
         this.bm = bm;
         Mat input = new Mat();
         Mat hsv = new Mat();
@@ -145,9 +158,9 @@ public class test extends OpMode implements UVCCamera.Callback {
 
         //Centroid setup
         Moments mmnts = Imgproc.moments(mask, true);
-        double locationX = mmnts.get_m10() / mmnts.get_m00();
-        double posX = (input.width() / 2) - locationX;
-        double size = maxArea;
+        locationX = mmnts.get_m10() / mmnts.get_m00();
+        posX = (input.width() / 2) - locationX;
+        size = maxArea;
 
         telemetry.addData("Location", locationX);
         telemetry.addData("Position", posX);
@@ -161,7 +174,7 @@ public class test extends OpMode implements UVCCamera.Callback {
             sampPos = 0;
         }
 
-        telemetry.addData("Sample", sampPos);
+        //telemetry.addData("Sample", sampPos);
         if(save) {
             PSVisionUtils.saveImageToFile(bm,"image_before", "/saved_images");
             save = false;

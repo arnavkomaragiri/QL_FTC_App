@@ -22,7 +22,7 @@ public class Hanger {
     }
 
     public void operate(Gamepad g){
-        hang.setPower(g.right_stick_y);
-        extend.setPower(g.left_stick_y);
+        hang.setPower(g.left_stick_y);
+        extend.setPower(g.right_stick_y);
     }
 }

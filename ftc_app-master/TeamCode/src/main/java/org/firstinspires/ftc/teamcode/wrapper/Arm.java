@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.wrapper;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 public class Arm {
@@ -9,6 +10,7 @@ public class Arm {
     public Arm(DcMotor sweeper, DcMotor arm){
         this.sweeper = sweeper;
         this.arm = arm;
+        //arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
     
     public void setArm(DcMotor arm){
@@ -28,14 +30,14 @@ public class Arm {
     }
     
     public void move(Gamepad g){
-        arm.setPower(g.right_stick_y * 0.6);
+        //arm.setPower(g.right_stick_y * 0.5);
         if (g.y){
-            arm.setPower(0.6);
+            arm.setPower(0.7);
         }
-        else if (g.y){
-            arm.setPower(-0.6);
+        else if (g.a){
+            arm.setPower(-0.5);
         }
-        else{
+        else if (g.right_stick_y == 0.0){
             arm.setPower(0.0);
         }
         sweeper.setPower(-g.right_trigger);
