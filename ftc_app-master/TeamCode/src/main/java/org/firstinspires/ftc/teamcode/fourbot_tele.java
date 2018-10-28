@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -38,13 +39,14 @@ public class fourbot_tele extends OpMode{
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime precision = new ElapsedTime();
     Pose2d pose = new Pose2d(0, 0, 0);
+    DcMotorEx motor;
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
         motors[1] = hardwareMap.dcMotor.get("up_right");
         motors[2] = hardwareMap.dcMotor.get("back_left");
         motors[3] = hardwareMap.dcMotor.get("back_right");
-
+        
         hanger = new Hanger(hardwareMap);
 
         arm1 = hardwareMap.get(DcMotor.class, "arm");
@@ -52,8 +54,8 @@ public class fourbot_tele extends OpMode{
 
         box_left = hardwareMap.get(Servo.class, "box_left");
         box_right = hardwareMap.get(Servo.class, "box_right");
-        box_left.setPosition(0.9);
-        box_right.setPosition(0.1);
+        box_left.setPosition(0.85);
+        box_right.setPosition(0.15);
 
         arm = new Arm(sweeper, arm1);
 
@@ -70,16 +72,15 @@ public class fourbot_tele extends OpMode{
             pose = drive.track();
             precision.reset();
         }
-
-        if (gamepad2.left_bumper && cooldown.time() > 1){
+        if (gamepad2.left_bumper && cooldown.time() > 0.25){
             if (!flip){
-                box_left.setPosition(0.1);
-                box_right.setPosition(0.9);
+                box_left.setPosition(0.0);
+                box_right.setPosition(1.0);
                 flip = true;
             }
             else {
-                box_left.setPosition(0.9);
-                box_right.setPosition(0.1);
+                box_left.setPosition(0.85);
+                box_right.setPosition(0.15);
                 flip = false;
             }
             cooldown.reset();

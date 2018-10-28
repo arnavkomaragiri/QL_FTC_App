@@ -46,6 +46,17 @@ public class Gimbel{
         servoY.setPosition(y_pos);
     }
 
+    public void move(double x, double y){
+        double x_pos = servoX.getPosition() + x;
+        double y_pos = servoY.getPosition() + y;
+
+        x_pos = Range.clip(x_pos, 0, 1);
+        y_pos = Range.clip(y_pos, 0, 1);
+
+        servoX.setPosition(x_pos);
+        servoY.setPosition(y_pos);
+    }
+
     public Vector2d getPos(){
         double x_pos = servoX.getPosition();
         double y_pos = servoY.getPosition();

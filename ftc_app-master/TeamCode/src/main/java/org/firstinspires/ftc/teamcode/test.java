@@ -35,13 +35,14 @@ public class test extends OpMode implements UVCCamera.Callback { //necessary for
 
     UVCCamera camera;
     Bitmap bm;
-    int sampPos = -1; //0 = Left, 1 = center
+    int sampPos = -1; //0 = Left, 1 = center 2 = right
     int sampleNow;
     double angle;
     static String load = "";
     boolean save = false;
 
     double locationX = 0.0;
+    double locationY = 0.0;
     double posX = 0.0;
     double size = 0.0;
 
