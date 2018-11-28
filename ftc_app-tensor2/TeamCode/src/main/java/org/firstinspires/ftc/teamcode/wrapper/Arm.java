@@ -24,6 +24,15 @@ public class Arm {
         STATE_CLEAR,
         STATE_END
     }
+
+    public int getmTransferState(){
+        if (mTransferState == State.STATE_END){
+            return 1;
+        }
+        else{
+            return 0;
+        }
+    }
     
     public Arm(DcMotor sweeper, DcMotor arm, Servo back){
         this.sweeper = sweeper;
@@ -64,47 +73,69 @@ public class Arm {
     }
 
     public void move(double vel, int state, boolean b_state){
-        if (b_state){
-            back.setPosition(0.25);
-            speed = 1.0;
-            bstate = false;
-        }
-        else{
-            back.setPosition(0.5);
-            speed = 0.4;
-            bstate = true;
+        if (state != 1) {
+            if (b_state) {
+                back.setPosition(0.25);
+                speed = 1.0;
+                bstate = false;
+            } else {
+                back.setPosition(0.5);
+                speed = 0.4;
+                bstate = true;
+            }
         }
 
         if (!complete){
             cooldown.reset();
         }
 
-        if (Math.abs(arm.getCurrentPosition() + 700) < 10 && state == 1){
+        if (arm.getCurrentPosition() >= -700 && state == 1){
             back.setPosition(0.6);
         }
 
         switch (state){
             case 1:
-                if (Math.abs(arm.getCurrentPosition() + 270) < 25){
-                    complete = true;
-                    if (cooldown.time() >= 1.0) {
-                        arm.setTargetPosition(arm.getCurrentPosition());
-                        arm.setPower(0.0);
+                switch (mTransferState){
+                    case STATE_END:
+                        newState(State.STATE_TRANSFER);
+                        break;
+                    case STATE_TRANSFER:
+                        arm.setTargetPosition(-400);
+                        arm.setPower(0.7);
                         complete = false;
-                        cooldown.reset();
-                        //sweeper.setPower(1.0);
-                        //engage = true;
-                    }
-                }
-                else{
-                    arm.setTargetPosition(-270);
-                    arm.setPower(0.7);
-                    complete = false;
+                        if (Math.abs(arm.getCurrentPosition() + 400) < 25){
+                            complete = true;
+                            if (cooldown.time() >= 0.125) {
+                                arm.setTargetPosition(-500);
+                                arm.setPower(0.7);
+                                complete = false;
+                                cooldown.reset();
+                                //sweeper.setPower(1.0);
+                                //engage = true;
+                                newState(State.STATE_CLEAR);
+                            }
+                        }
+                        break;
+                    case STATE_CLEAR:
+                        if (Math.abs(arm.getCurrentPosition() + 500) < 25){
+                            complete = true;
+                            if (cooldown.time() >= 0.25) {
+                                arm.setTargetPosition(arm.getCurrentPosition());
+                                arm.setPower(0.0);
+                                complete = false;
+                                cooldown.reset();
+                                //sweeper.setPower(1.0);
+                                //engage = true;
+                                newState(State.STATE_END);
+                            }
+                        }
+                        break;
                 }
                 break;
 
             case 2:
-                if (Math.abs(arm.getCurrentPosition() + 1400) < 25) {
+                mTransferState = State.STATE_END;
+                if (Math.abs(arm.getCurrentPosition() + 1450) < 25) {
                     complete = true;
                     if (bstate){
                         back.setPosition(0.5);
@@ -122,12 +153,13 @@ public class Arm {
                     //engage = true;
                 }
                 else{
-                    arm.setTargetPosition(-1400);
+                    arm.setTargetPosition(-1450);
                     arm.setPower(0.5);
                     complete = false;
                 }
                 break;
             case 3:
+                mTransferState = State.STATE_END;
                 if (Math.abs(arm.getCurrentPosition() + 400) < 25) {
                     complete = true;
                     if (cooldown.time() >= 1.0) {
@@ -146,7 +178,9 @@ public class Arm {
                 }
                 break;
         }
-        this.sweeper.setPower(-vel * speed);
+        if (vel != -2.0) {
+            this.sweeper.setPower(-vel * speed);
+        }
     }
 
     public void newState(State s){
@@ -242,7 +276,7 @@ public class Arm {
                         if (Math.abs(arm.getCurrentPosition() + 400) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.25) {
-                                arm.setTargetPosition(-450);
+                                arm.setTargetPosition(-500);
                                 arm.setPower(0.7);
                                 complete = false;
                                 cooldown.reset();
@@ -253,7 +287,7 @@ public class Arm {
                         }
                         break;
                     case STATE_CLEAR:
-                        if (Math.abs(arm.getCurrentPosition() + 450) < 25){
+                        if (Math.abs(arm.getCurrentPosition() + 500) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.5) {
                                 arm.setTargetPosition(arm.getCurrentPosition());

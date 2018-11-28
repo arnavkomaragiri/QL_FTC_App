@@ -95,6 +95,9 @@ public class fourbot_tele extends OpMode{
             pose = drive.track(telemetry);
             precision.reset();
         }
+        if (gamepad1.b){
+            drive.motor_reset();
+        }
         if (gamepad2.left_bumper && cooldown.time() > 0.25){
             if (!flip){
                 if (arm.getBState()) {
@@ -115,7 +118,7 @@ public class fourbot_tele extends OpMode{
             cooldown.reset();
         }
 
-        telemetry.addData("Odometer: ", wheel.getDistance());
+        telemetry.addData("Odometer: ", drive.getOdoDistance());
         telemetry.addData("Delta Distance: ", drive.getG_distance());
         telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
         telemetry.addData("Wheel Pos: ", arm.getSweeper().getCurrentPosition());

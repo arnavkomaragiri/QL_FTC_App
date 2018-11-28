@@ -73,6 +73,7 @@ public class QL_Auto_R1 extends OpMode {
     State mRobotState = State.STATE_START;
     ElapsedTime mStateTime = new ElapsedTime();
     PriorityQueue<Pose2d> recog;
+    Pose2d memo = new Pose2d(0, 0, 0);
 
     class PoseComparator implements Comparator<Pose2d>{
         public int compare(Pose2d o1, Pose2d o2){
@@ -198,7 +199,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_SCAN:
-                g.GoTo(0.11, 0.178);
+                g.GoTo(0.09, 0.21);
                 pos = getPos();
                 telemetry.addData("Pos: ", pos);
                 if (pos != -1){
@@ -206,7 +207,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_SCAN2:
-                g.GoTo(0.03, -0.01669);
+                g.GoTo(0.09, 0.03);
                 recog = vision_pulse();
                 arm.move(0, 2, true);
                 if (recog.peek() != null) {
@@ -214,9 +215,9 @@ public class QL_Auto_R1 extends OpMode {
                     telemetry.addData("Target Y: ", recog.peek().y());
                     chosen = recog.peek();
                 }
-                if (Math.abs(arm.getArm().getCurrentPosition() + 1400) < 10 && recog.peek() != null){
-                    box_left.setPosition(0.85);
-                    box_right.setPosition(0.15);
+                if (Math.abs(arm.getArm().getCurrentPosition() + 1450) < 10 && recog.peek() != null){
+                    box_left.setPosition(0.9);
+                    box_right.setPosition(0.1);
                     newState(State.STATE_DROP);
                 }
                 break;
@@ -244,7 +245,7 @@ public class QL_Auto_R1 extends OpMode {
                             newState(State.STATE_STOP);
                             break;
                         case 1:
-                            newState(State.STATE_STOP);
+                            newState(State.STATE_CENTER);
                             break;
                         case 2:
                             newState(State.STATE_STOP);
@@ -254,34 +255,38 @@ public class QL_Auto_R1 extends OpMode {
                 break;
             case STATE_TURN:
                 arm.move(0.0, 1, true);
-                if (drive.turn(315, telemetry)){
-                    newState(State.STATE_STOP);
+                if (drive.turn(-45, telemetry)){
+                    //drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
+                    //drive.engage();
+                    newState(State.STATE_TRAVEL);
                 }
                 break;
             case STATE_ALIGN:
                 //arm.move(0.0, 1, true);
                 telemetry.addData("Aligning", pose.toString());
-                if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7) && Math.abs(arm.getArm().getCurrentPosition() + 270) < 10){
+                if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7)){// && arm.getmTransferState() == 1){
+                    memo = drive.getPos();
+                    drive.disengage();
                     newState(State.STATE_TURN);
                 }
                 break;
             case STATE_CENTER:
                 arm.move(0.0, 1, true);
                 telemetry.addData("Centering", pose.toString());
-                if (drive.goTo(new Pose2d(-0 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry) && Math.abs(arm.getArm().getCurrentPosition() + 270) < 10){
-                    newState(State.STATE_STOP);
+                if (drive.goTo(new Pose2d(-0 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7) && arm.getmTransferState() == 1){
+                    newState(State.STATE_ALIGN);
                 }
                 break;
             case STATE_TRAVEL:
                 telemetry.addData("Travelling: ", pose.toString());
-                if (drive.goTo(new Pose2d(-36 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 1)){
+                if (drive.goTo(new Pose2d(-36 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 0.5, 15, 1)){
                     newState(State.STATE_STOP);
                 }
                 break;
             case STATE_TRAVEL2:
                 telemetry.addData("Travelling 2: ", pose.toString());
-                if (drive.goTo(new Pose2d(-48 * Math.sqrt(2), 0 * Math.sqrt(2), 315), telemetry)){
-                    newState(State.STATE_RETURN);
+                if (drive.goTo(new Pose2d(-48 * Math.sqrt(2), 0 * Math.sqrt(2), 315), telemetry, 5)){
+                    newState(State.STATE_STOP);
                 }
                 break;
             case STATE_RETURN:

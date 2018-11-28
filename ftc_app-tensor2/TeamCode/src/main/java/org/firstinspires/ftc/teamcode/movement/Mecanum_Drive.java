@@ -71,6 +71,14 @@ public class Mecanum_Drive{
         return output;
     }
 
+    public void setPos(Pose2d p){
+        this.p = p;
+    }
+
+    public Pose2d getPos(){
+        return p;
+    }
+
     public void drive(Gamepad gamepad1) {
         double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
         double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
@@ -89,11 +97,11 @@ public class Mecanum_Drive{
         v[3] = (r * Math.cos(robotAngle)) - rightX;
 
         for (int i = 0; i < 4; i++) {
-            if (Math.abs(v[i]) > max) {
+            if (v[i] > max) {
                 max = v[i];
             }
         }
-        if (max <= 0) {
+        if (max == 0) {
             max = 1;
         }
         //System.out.println();
@@ -110,20 +118,22 @@ public class Mecanum_Drive{
     }
 
     public boolean turn(double heading, Telemetry t){
-        double e = heading - this.gyro.getHeading();
+        double e = heading - this.gyro.getIntegratedZValue();
         boolean result = false;
-        if (Math.abs(e) > 180){
-            e -= 360;
-        }
-        double power = -Range.clip(e, -1, 1);
         t.addData("E: ", e);
-        motor_reset();
-        if (Math.abs(e) > 10) {
-            drive(0.0, 0.0, power, 0);
+        if (e >= 5){
+            t.addData("Direction Forward: ", e);
+            drive(0.0, 0.0, -0.5, 0.0);
+        }
+        else if (e <= -5){
+            t.addData("Direction Backward: ", e);
+            drive(0.0, 0.0, 0.5,0.0);
         }
         else{
-            result = true;
             drive(0.0, 0.0, 0.0, 0.0);
+            motor_reset();
+            odometer.reset();
+            result = true;
         }
         return result;
     }
@@ -225,10 +235,10 @@ public class Mecanum_Drive{
     public Pose2d track(Telemetry telemetry) {
         Vector2d[] v = new Vector2d[4];
 
-        double heading = gyro.getHeading(); //todo: format heading
+        double heading = Math.toRadians(gyro.getHeading()); //todo: format heading
         double z = Math.toRadians(inverse(gyro.getIntegratedZValue()));
         double robotAngle = 0.0;
-        heading = Math.toRadians(heading); //fix: mount gyro sideways bc I'm lazy LUL
+        //heading = Math.toRadians(heading); //fix: mount gyro sideways bc I'm lazy LUL
 
         double x = 0.0, y = 0.0;
 
@@ -247,7 +257,7 @@ public class Mecanum_Drive{
         double distance = odometer.getDistance() - prevpos[4];
         g_distance = distance;
         telemetry.addData("Distance: ", distance);
-        if (Math.abs(distance) >= 0.25){ //todo: tune this
+        if (Math.abs(distance) >= 0.10){ //todo: tune this
             prevpos[4] = odometer.getDistance();
             Vector2d v2 = new Vector2d(p.x() - memo.x(), p.y() - memo.y());
             if (v2.y() != 0.0 && v2.norm() >= 0.5){
@@ -270,14 +280,29 @@ public class Mecanum_Drive{
         }
 
         robotAngle = Math.atan2(center.y(), center.x());
+        //robotAngle = Math.toRadians(robotHeading);
+        telemetry.addData("Robot Angle: ", robotAngle);
+        telemetry.addData("Robot Heading: ", Math.toDegrees(heading));
+        telemetry.addData("Robot True Heading: ", this.gyro.getHeading());
+        telemetry.addData("Norm: ", center.norm());
+        telemetry.addData("Total: ", heading + robotAngle);
         //robotAngle = robotHeading; //todo: test if this even works
 
         double startx = center.norm() * Math.cos(heading + robotAngle);
         double starty = center.norm() * Math.sin(heading + robotAngle);
+        telemetry.addData("Delta X: ", startx);
+        telemetry.addData("Delta Y: ", starty);
 
-        p = new Pose2d(p.x() + startx, p.y() + starty, heading);
+        p = new Pose2d(p.x() + starty, p.y() + startx, heading);
         return p;
     }
+
+    private double inverted(double heading){
+        double y = Math.sin(heading);
+        double x = Math.cos(heading);
+        return Math.atan2(x, y);
+    }
+
 
     public boolean goTo(Pose2d pos, Telemetry t){
         track();
@@ -395,6 +420,45 @@ public class Mecanum_Drive{
         }
         return result;
     }
+    public boolean goTo(Pose2d pos, Telemetry t, double spower, double r, int rand){
+        track(t);
+        boolean result = false;
+
+        double robotAngle = Math.atan2(pos.y() - p.x(), pos.x() - p.y()) - Math.toRadians(this.gyro.getHeading());
+        double e = pos.heading() - invert(this.gyro.getHeading());
+        if (e > 180){
+            e -= 360;
+        }
+        double trans = Range.clip(e, -1, 1);
+        t.addData("Trans:", trans);
+        t.addData("Angle: ", Math.toDegrees(robotAngle));
+        t.addData("X: ", this.p.x());
+        t.addData("Y: ", this.p.y());
+        double dist = pos.dist(new Pose2d(p.y(), p.x(), 0));
+        if (first){
+            primary = dist;
+            primaryAngle = robotAngle;
+            first = false;
+        }
+        t.addData("Dist: ", dist);
+        double power = ((1.013567309815 / 2.0) * (Math.tanh((5 * (dist / primary)) - 2.5))) + 0.5;
+        power += 0.3;
+        power *= spower;
+        power = Range.clip(power, 0, 1);
+        t.addData("Power: ", power);
+        if (dist > r) {
+            t.addData("Moving: ", p.toString());
+            drive(power, robotAngle, 0.0, 0.0);
+        }
+        else{
+            result = true;
+            first = true;
+            t.addData("Moving on: ", p.toString());
+            drive(0.0, 0, 0.0, 0.0);
+            motor_reset();
+        }
+        return result;
+    }
     private double invert(double heading){
         return ((360 - heading) % 360);
     }
@@ -421,7 +485,7 @@ public class Mecanum_Drive{
     }
 
     public double getOdoDistance(){
-        return odometer.getDistance() - prevpos[4];
+        return odometer.getDistance();
     }
 
     public void enable(){
@@ -440,6 +504,10 @@ public class Mecanum_Drive{
     }
     public void engage(){
         odometer.engage();
+        odometer.reset();
+    }
+    public void disengage(){
+        odometer.disengage();
         odometer.reset();
     }
 }

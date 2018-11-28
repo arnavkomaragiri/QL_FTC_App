@@ -37,5 +37,6 @@ public class QL_Encoder {
 
     public void reset(){
         previous = odo.getVoltage() * 72;
+        rot = 0.0;
     }
 }
