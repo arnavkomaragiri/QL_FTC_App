@@ -29,6 +29,7 @@ public class QL_Auto_R1 extends OpMode {
     Mecanum_Drive drive;
     Hanger hanger;
     Arm arm;
+    double radius = 24.5;
     private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
     private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
@@ -101,6 +102,8 @@ public class QL_Auto_R1 extends OpMode {
         STATE_PREP,
         STATE_SAMPLE,
         STATE_CENTER,
+        STATE_TRANSFER,
+        STATE_CHECKPOINT,
         STATE_TURN,
         STATE_TURN2,
         STATE_TURN3,
@@ -127,7 +130,7 @@ public class QL_Auto_R1 extends OpMode {
         arm = new Arm(sweeper, arm1, hardwareMap.get(Servo.class, "back"));
 
         g = new Gimbel(hardwareMap);
-        g.GoTo(-0.5, -0.5);
+        g.GoTo(-0.5, -0.19);
 
         drive = new Mecanum_Drive(hardwareMap);
 
@@ -203,7 +206,12 @@ public class QL_Auto_R1 extends OpMode {
                     /*if (drive.goTo(new Pose2d(0, 1, 0), telemetry, 0.3, 1.5)){
                         newState(State.STATE_SAMPLE);
                     }*/
-                    newState(State.STATE_SAMPLE);
+                    if (pos != 0) {
+                        newState(State.STATE_SAMPLE);
+                    }
+                    else{
+                        newState(State.STATE_CENTER);
+                    }
                 }
                 break;
             case STATE_SCAN:
@@ -245,20 +253,28 @@ public class QL_Auto_R1 extends OpMode {
                     default:
                         dest = new Pose2d(0, 0, 0);
                 }
-                if (drive.goTo(dest, telemetry)){// && !dest.equals(new Pose2d(0, 0, 0))){
+                if (drive.goTo(dest, telemetry, 4)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
                     //arm.move(0.0, 2, true);
                     switch (pos) {
                         case 0:
-                            newState(State.STATE_STOP);
+                            //radius = 23;
+                            newState(State.STATE_TRANSFER);
                             break;
                         case 1:
-                            newState(State.STATE_CENTER);
+                            newState(State.STATE_TRANSFER);
                             break;
                         case 2:
-                            newState(State.STATE_STOP);
+                            drive.disengage();
+                            newState(State.STATE_TRANSFER);
                             break;
                     }
+                }
+                break;
+            case STATE_CHECKPOINT:
+                if (drive.goTo(new Pose2d(0, 12 * Math.sqrt(2), 0), telemetry, 0.5, 3)){
+                    drive.setPos(new Pose2d(0, 12 * Math.sqrt(2), 0));
+                    newState(State.STATE_ALIGN);
                 }
                 break;
             case STATE_TURN:
@@ -275,31 +291,39 @@ public class QL_Auto_R1 extends OpMode {
                 if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7)){// && arm.getmTransferState() == 1){
                     memo = drive.getPos();
                     //drive.disengage();
+                    drive.engage();
                     newState(State.STATE_TURN);
                 }
                 break;
             case STATE_CENTER:
+                //arm.move(0.0, 1, true);
+                telemetry.addData("Centering: ", pose.toString());
+                if (drive.goTo(new Pose2d(0, 1, 0), telemetry, 0.3, 1.5)){
+                    newState(State.STATE_SAMPLE);
+                }
+                break;
+            case STATE_TRANSFER:
                 arm.move(0.0, 1, true);
-                telemetry.addData("Centering", pose.toString());
-                if (drive.goTo(new Pose2d(-0 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7) && arm.getmTransferState() == 1){
+                telemetry.addData("Transferring: ", pose.toString());
+                if (arm.getmTransferState() == 1){
                     newState(State.STATE_ALIGN);
                 }
                 break;
             case STATE_TRAVEL:
-                telemetry.addData("Travelling: ", pose.toString());
-                if (drive.goTo(new Pose2d((-48 * Math.sqrt(2)), 12 * Math.sqrt(2), 315), telemetry, 0.5, 25, 1)){
+                telemetry.addData("Travelling (insert prayers): ", pose.toString());
+                if (drive.goTo(new Pose2d((-48 * Math.sqrt(2)), 12 * Math.sqrt(2), 315), telemetry, 0.5, radius, 1)){
                     drive.motor_reset();
-                    if (Math.abs(drive.getRobotHeading() - 315) < 2){
+                    if (pos != 0){
                         newState(State.STATE_TRAVEL2);
                     }
                     else {
-                        newState(State.STATE_TRAVEL2);
+                        newState(State.STATE_TURN2);
                     }
                 }
                 break;
             case STATE_TURN2:
                 telemetry.addData("Turning Again: ", drive.getRobotHeading());
-                if (drive.turn(-45, 2, 0.3, telemetry)){
+                if (drive.turn(-53, 2, 0.3, telemetry)){
                     //drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                     //drive.engage();
                     newState(State.STATE_TRAVEL2);
@@ -325,7 +349,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_TURN3:
-                telemetry.addData("Turning Again Again: ", drive.getRobotHeading());
+                telemetry.addData("Turning Again Again (that's three turns now monkaS): ", drive.getRobotHeading());
                 if (mStateTime.time() >= 0.25) {
                     if (drive.turn(-43, 2, 0.25, telemetry)) {
                         //drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
@@ -340,7 +364,7 @@ public class QL_Auto_R1 extends OpMode {
                     newState(State.STATE_STOP);
                 }*/
                     drive.drive(0.8, Math.PI / 2, 0, 0);
-                    if (drive.getOdoDistance() * Math.sin(Math.toRadians((this.drive.getRobotHeading() - 315) + 90)) >= 32) {
+                    if (drive.getOdoDistance() * Math.sin(Math.toRadians((this.drive.getRobotHeading() - 315) + 90)) >= 36) {
                         drive.drive(0.0, 0.0, 0.0, 0.0);
                         drive.motor_reset();
                         newState(State.STATE_STOP);

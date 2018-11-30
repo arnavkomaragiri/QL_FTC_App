@@ -407,6 +407,7 @@ public class Mecanum_Drive{
         t.addData("Dist: ", dist);
         double power = ((1.013567309815 / 2.0) * (Math.tanh((5 * (dist / primary)) - 2.5))) + 0.5;
         power += 0.3;
+        power *= 0.5;
         power = Range.clip(power, 0, 1);
         t.addData("Power: ", power);
         if (dist > r) {
