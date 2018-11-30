@@ -106,7 +106,7 @@ public class Arm {
                         if (Math.abs(arm.getCurrentPosition() + 400) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.125) {
-                                arm.setTargetPosition(-500);
+                                arm.setTargetPosition(-700);
                                 arm.setPower(0.7);
                                 complete = false;
                                 cooldown.reset();
@@ -117,7 +117,7 @@ public class Arm {
                         }
                         break;
                     case STATE_CLEAR:
-                        if (Math.abs(arm.getCurrentPosition() + 500) < 25){
+                        if (Math.abs(arm.getCurrentPosition() + 700) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.25) {
                                 arm.setTargetPosition(arm.getCurrentPosition());

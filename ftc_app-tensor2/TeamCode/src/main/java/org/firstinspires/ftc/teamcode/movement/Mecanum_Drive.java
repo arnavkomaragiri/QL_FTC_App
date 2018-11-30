@@ -87,7 +87,7 @@ public class Mecanum_Drive{
 
         robotHeading = angle;
         double robotAngle = angle - Math.PI / 4;
-        double max = -1.0;
+        double max = 0.0;
 
         Double[] v = {0.0, 0.0, 0.0, 0.0};
 
@@ -127,7 +127,48 @@ public class Mecanum_Drive{
         }
         else if (e <= -5){
             t.addData("Direction Backward: ", e);
-            drive(0.0, 0.0, 0.5,0.0);
+            drive(0.0, 0.0, 0.4,0.0);
+        }
+        else{
+            drive(0.0, 0.0, 0.0, 0.0);
+            motor_reset();
+            odometer.reset();
+            result = true;
+        }
+        return result;
+    }
+
+    public boolean turn(double heading, double r, Telemetry t){
+        double e = heading - this.gyro.getIntegratedZValue();
+        boolean result = false;
+        t.addData("E: ", e);
+        if (e >= r){
+            t.addData("Direction Forward: ", e);
+            drive(0.0, 0.0, -0.3, 0.0);
+        }
+        else if (e <= -r){
+            t.addData("Direction Backward: ", e);
+            drive(0.0, 0.0, 0.3,0.0);
+        }
+        else{
+            drive(0.0, 0.0, 0.0, 0.0);
+            motor_reset();
+            odometer.reset();
+            result = true;
+        }
+        return result;
+    }
+    public boolean turn(double heading, double r, double speed, Telemetry t){
+        double e = heading - this.gyro.getIntegratedZValue();
+        boolean result = false;
+        t.addData("E: ", e);
+        if (e >= r){
+            t.addData("Direction Forward: ", e);
+            drive(0.0, 0.0, -speed, 0.0);
+        }
+        else if (e <= -r){
+            t.addData("Direction Backward: ", e);
+            drive(0.0, 0.0, speed,0.0);
         }
         else{
             drive(0.0, 0.0, 0.0, 0.0);
