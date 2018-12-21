@@ -23,6 +23,7 @@ public class Mecanum_Drive{
     private Pose2d memo = new Pose2d(0, 0, 0);
     private double[] prevpos = new double[5];
     private double robotHeading = 0.0;
+    private double f_heading = 0.0;
     private double primary = 1.0;
     private double primaryAngle = 0.0;
     private double avgHeading = 0.0;
@@ -43,7 +44,7 @@ public class Mecanum_Drive{
 
     public Mecanum_Drive(HardwareMap h){
         this.gyro = (ModernRoboticsI2cGyro)h.gyroSensor.get("gyro");
-        this.gyro.calibrate();
+        //this.gyro.calibrate();
         this.odometer = new Tracker_Wheel(h);
         motors[0] = h.get(DcMotor.class, "up_left");
         motors[1] = h.get(DcMotor.class, "up_right");
@@ -69,6 +70,11 @@ public class Mecanum_Drive{
         output += " " + Double.toString(motors[3].getPower());
 
         return output;
+    }
+
+    public void calibrate(){
+        odometer.reset();
+        this.gyro.calibrate();
     }
 
     public void setPos(Pose2d p){
@@ -97,8 +103,47 @@ public class Mecanum_Drive{
         v[3] = (r * Math.cos(robotAngle)) - rightX;
 
         for (int i = 0; i < 4; i++) {
-            if (v[i] > max) {
-                max = v[i];
+            if (Math.abs(v[i]) > max) {
+                max = Math.abs(v[i]);
+            }
+        }
+        if (max == 0) {
+            max = 1;
+        }
+        //System.out.println();
+        double scale = ((r == 0) ? Math.hypot(rightX, rightY) : r) / ((max == 0) ? ((r == 0) ? Math.hypot(rightX, rightY) : r) : max);
+        //System.out.println(scale);
+        //System.out.println();
+
+        for (int i = 0; i < 4; i++) {
+            v[i] *= scale;
+            //System.out.println(v[i]);
+            v[i] = Range.clip(v[i], -1.0, 1.0);
+            motors[i].setPower(v[i]);
+        }
+    }
+
+    public void f_drive(Gamepad gamepad1){
+        f_heading = this.gyro.getHeading() - 45;
+        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
+        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.toRadians(f_heading);
+        double rightX = gamepad1.right_stick_x;
+        double rightY = gamepad1.right_stick_y;
+
+        robotHeading = angle;
+        double robotAngle = angle - Math.PI / 4;
+        double max = 0.0;
+
+        Double[] v = {0.0, 0.0, 0.0, 0.0};
+
+        v[0] = (r * Math.cos(robotAngle)) + rightX;
+        v[1] = (r * Math.sin(robotAngle)) - rightX;
+        v[2] = (r * Math.sin(robotAngle)) + rightX;
+        v[3] = (r * Math.cos(robotAngle)) - rightX;
+
+        for (int i = 0; i < 4; i++) {
+            if (Math.abs(v[i]) > max) {
+                max = Math.abs(v[i]);
             }
         }
         if (max == 0) {

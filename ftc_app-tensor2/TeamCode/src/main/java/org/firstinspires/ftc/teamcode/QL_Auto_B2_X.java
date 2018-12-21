@@ -495,7 +495,7 @@ public class QL_Auto_B2_X extends OpMode{
                 break;
             case STATE_POSITION:
                 if (mStateTime.time() >= 0.25) {
-                    if (gyroTurn6(velocity, 140)) {
+                    if (gyroTurn6(velocity, 140)) { //I remember you. And I have no plans of forgetting. You are the most important thing that ever happened, and you will be the sole cause of the greatest software project ever designed in FIRST
                         logMessage("Entering Travel:", Integer.toString(gyro.getIntegratedZValue()));
                         newState(State.STATE_TRAVEL);
                     }

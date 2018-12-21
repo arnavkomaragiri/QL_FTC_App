@@ -13,7 +13,10 @@ public class Hanger {
 
     private ElapsedTime cooldown = new ElapsedTime();
     private ElapsedTime cooldown2 = new ElapsedTime();
+    private ElapsedTime jam = new ElapsedTime();
+    private double previous = 0.0;
     private boolean complete = true;
+    private boolean first = true;
 
     private boolean hangstate = false;
 
@@ -39,7 +42,7 @@ public class Hanger {
     }
 
     public boolean drop(){
-        int pos = -14000;
+        int pos = 10000;
         hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang.setTargetPosition(pos);
         hang.setPower(1.0);
@@ -73,7 +76,12 @@ public class Hanger {
 
     public boolean extend(){
         boolean result = false;
-        if (Math.abs(extend.getCurrentPosition() - 900) <= 50){
+
+        if (first){
+            jam.reset();
+            first = false;
+        }
+        if (Math.abs(extend.getCurrentPosition() - 950) <= 50 || jam.time() >= 2.0){
             complete = true;
             //if (cooldown2.time() >= 0.125) {
                 //extend.setTargetPosition(hang.getCurrentPosition());
@@ -82,6 +90,7 @@ public class Hanger {
                 hangstate = false;
                 cooldown.reset();
                 result = true;
+                first = true;
             //}
         }
         else{
@@ -91,24 +100,25 @@ public class Hanger {
             hangstate = true;
             complete = false;
         }
+        previous = extend.getCurrentPosition();
         return result;
     }
 
     public void operate(Gamepad g){
         if (g.dpad_up){
-            extend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            extend.setTargetPosition(850);
-            extend.setPower(-1.0);
+            hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            hang.setTargetPosition(7300);
+            hang.setPower(1.0);
             hangstate = true;
             complete = false;
         }
 
-        if (Math.abs(extend.getCurrentPosition() - 850) < 10){
+        if (Math.abs(hang.getCurrentPosition() - 7300) < 10){
             complete = true;
             if (cooldown2.time() >= 1.0) {
-                extend.setTargetPosition(hang.getCurrentPosition());
-                extend.setPower(0.0);
-                extend.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                hang.setTargetPosition(hang.getCurrentPosition());
+                hang.setPower(0.0);
+                hang.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 hangstate = false;
                 cooldown.reset();
             }
@@ -118,7 +128,7 @@ public class Hanger {
             cooldown2.reset();
         }
         if (!hangstate) {
-            extend.setPower(g.right_stick_y);
+            hang.setPower(g.left_stick_y * -1);
         }
         //if (!hangstate) {
             /*if (extend.getCurrentPosition() >= 0.0) {
@@ -130,7 +140,7 @@ public class Hanger {
         //}
         //}
         //else{
-            hang.setPower(g.left_stick_y);
+            extend.setPower(g.right_stick_y);
         //}
     }
 }

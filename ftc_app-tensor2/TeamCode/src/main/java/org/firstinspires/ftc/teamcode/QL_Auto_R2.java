@@ -21,8 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-@Autonomous(name = "QL_Auto_R1", group = "Competition")
-public class QL_Auto_R1 extends OpMode {
+@Autonomous(name = "QL_Auto_R2", group = "Competition")
+public class QL_Auto_R2 extends OpMode {
     DcMotor motors[] = new DcMotor[4];
     DcMotor arm1;
     DcMotor sweeper;
@@ -126,7 +126,7 @@ public class QL_Auto_R1 extends OpMode {
         box_left = hardwareMap.get(Servo.class, "box_left");
         box_right = hardwareMap.get(Servo.class, "box_right");
         marker = hardwareMap.get(Servo.class, "tm");
-        marker.setPosition(1.0);
+        marker.setPosition(0.8);
         box_left.setPosition(1.0);
         box_right.setPosition(0.0);
 
@@ -265,23 +265,21 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 if (drive.goTo(dest, telemetry, 3.5)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
-                    arm.move(0.0, 1, true);
+                    arm.move(0.0, 2, true);
                     switch (pos) {
                         case 0:
                             //radius = 23;
                             newState(State.STATE_TRANSFER);
-                            drive.disengage();
                             break;
                         case 1:
                             newState(State.STATE_TRANSFER);
-                            drive.disengage();
                             break;
                         case 2:
                             drive.disengage();
                             newState(State.STATE_TRANSFER);
                             break;
                     }
-                    //newState(State.STATE_SECURE);
+                    newState(State.STATE_SECURE);
                 }
                 break;
             case STATE_SECURE:
@@ -302,7 +300,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 if (drive.goTo(dest2, telemetry, 0.4, 4)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
-                    arm.move(0.0, 1, true);
+                    arm.move(0.0, 2, true);
                     switch (pos) {
                         case 0:
                             //radius = 23;
@@ -359,7 +357,7 @@ public class QL_Auto_R1 extends OpMode {
                 break;
             case STATE_TRAVEL:
                 telemetry.addData("Travelling (insert prayers): ", pose.toString());
-                /*if (drive.goTo(new Pose2d((-48 * Math.sqrt(2)), 12 * Math.sqrt(2), 315), telemetry, 0.5, radius, 1)){
+                if (drive.goTo(new Pose2d((-48 * Math.sqrt(2)), 12 * Math.sqrt(2), 315), telemetry, 0.5, radius, 1)){
                     drive.motor_reset();
                     if (pos != 0){
                         heading = -50;
@@ -368,11 +366,6 @@ public class QL_Auto_R1 extends OpMode {
                     else {
                         newState(State.STATE_TURN2);
                     }
-                }*/
-                drive.drive(0.5, Math.PI, 0.0, 0.0);
-                if (mStateTime.time() >= 2.0){
-                    drive.drive(0.0, Math.PI, 0.0, 0.0);
-                    newState(State.STATE_TRAVEL2);
                 }
                 break;
             case STATE_TURN2:
@@ -390,7 +383,7 @@ public class QL_Auto_R1 extends OpMode {
                 }*/
                 drive.drive(0.5, (Math.PI * 3) / 2, 0, 0);
                 arm.move(0.0, 3, true);
-                if (drive.getOdoDistance() <= -48){
+                if (drive.getOdoDistance() <= -24){
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     if (Math.abs(drive.getRobotHeading() - 315) < 2){
                         newState(State.STATE_RETURN);
@@ -398,7 +391,7 @@ public class QL_Auto_R1 extends OpMode {
                     else {
                         newState(State.STATE_RETURN);
                     }
-                    //newState(State.STATE_STOP);
+                    newState(State.STATE_STOP);
                     marker.setPosition(0.3);
                     box_left.setPosition(0.2);
                     box_right.setPosition(0.8);
@@ -424,12 +417,12 @@ public class QL_Auto_R1 extends OpMode {
                 /*if (drive.goTo(new Pose2d(0 * Math.sqrt(2), 48 * Math.sqrt(2), 315), telemetry, 0.5, 5, 1)){
                     newState(State.STATE_STOP);
                 }*/
-                    drive.drive(0.8, Math.PI / 2, 0, 0);
-                    if (drive.getOdoDistance()/* * Math.sin(Math.toRadians((this.drive.getRobotHeading() - 315) + 90))*/ >= 12) {
-                        drive.drive(0.0, 0.0, 0.0, 0.0);
-                        drive.motor_reset();
-                        newState(State.STATE_STOP);
-                    }
+                drive.drive(0.8, Math.PI / 2, 0, 0);
+                if (drive.getOdoDistance() * Math.sin(Math.toRadians((this.drive.getRobotHeading() - 315) + 90)) >= 24) {
+                    drive.drive(0.0, 0.0, 0.0, 0.0);
+                    drive.motor_reset();
+                    newState(State.STATE_STOP);
+                }
                 break;
             case STATE_STOP:
                 telemetry.addData("Ta-Da (insert jazz hands)", pose.toString());
@@ -445,8 +438,8 @@ public class QL_Auto_R1 extends OpMode {
                 break;
         }
         //if (mRunTime.time() >= 0.5) {
-            //pose = drive.track();
-            //mRunTime.reset();
+        //pose = drive.track();
+        //mRunTime.reset();
         //}
     }
 
