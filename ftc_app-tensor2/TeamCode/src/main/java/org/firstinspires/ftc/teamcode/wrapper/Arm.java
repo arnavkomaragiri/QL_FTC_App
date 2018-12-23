@@ -253,7 +253,7 @@ public class Arm {
             state = 3;
         }
 
-        if (arm.getCurrentPosition() >= -700 && state == 1){
+        if (arm.getCurrentPosition() >= (-700 - offset) && state == 1){
             back.setPosition(0.6);
         }
         /*else{
