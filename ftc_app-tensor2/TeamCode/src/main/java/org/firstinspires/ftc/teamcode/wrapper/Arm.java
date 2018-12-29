@@ -207,7 +207,7 @@ public class Arm {
             toggle.reset();
         }
         if (g.y){
-            if (Math.abs(arm.getCurrentPosition() + 400) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 400 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
@@ -225,7 +225,7 @@ public class Arm {
             state = 1;
         }
         else if (g.a){
-            if (Math.abs(arm.getCurrentPosition() + 1450) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
@@ -239,7 +239,7 @@ public class Arm {
             state = 2;
         }
         else if (g.x){
-            if (Math.abs(arm.getCurrentPosition() + 700) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 700 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;

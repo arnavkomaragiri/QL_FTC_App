@@ -81,7 +81,7 @@ public class Hanger {
             jam.reset();
             first = false;
         }
-        if (Math.abs(extend.getCurrentPosition() - 950) <= 50 || jam.time() >= 2.0){
+        if (Math.abs(extend.getCurrentPosition() - 850) <= 50 || jam.time() >= 2.0){
             complete = true;
             //if (cooldown2.time() >= 0.125) {
                 //extend.setTargetPosition(hang.getCurrentPosition());

@@ -135,8 +135,8 @@ public class fourbot_tele extends OpMode{
                     box_right.setPosition(1.0);
                 }
                 else{
-                    box_left.setPosition(0.2);
-                    box_right.setPosition(0.8);
+                    box_left.setPosition(0.15);
+                    box_right.setPosition(0.85);
                 }
                 flip = true;
             }
