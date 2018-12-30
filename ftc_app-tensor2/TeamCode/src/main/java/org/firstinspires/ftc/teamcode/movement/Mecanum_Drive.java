@@ -597,4 +597,8 @@ public class Mecanum_Drive{
         odometer.disengage();
         odometer.reset();
     }
+
+    public void odoReset(){
+        odometer.reset();
+    }
 }

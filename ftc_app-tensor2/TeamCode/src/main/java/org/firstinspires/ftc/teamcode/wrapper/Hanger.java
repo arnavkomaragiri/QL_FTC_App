@@ -143,4 +143,36 @@ public class Hanger {
             extend.setPower(g.right_stick_y);
         //}
     }
+
+    public boolean lift(){
+        boolean result = false;
+        int target = 1000;
+
+        if (first){
+            jam.reset();
+            extend.setTargetPosition(target);
+            first = false;
+        }
+        if (Math.abs(extend.getCurrentPosition() - target) <= 50){
+            complete = true;
+            //if (cooldown2.time() >= 0.125) {
+            extend.setTargetPosition(hang.getCurrentPosition());
+            extend.setPower(0.0);
+            extend.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            hangstate = false;
+            cooldown.reset();
+            result = true;
+            first = true;
+            //}
+        }
+        else{
+            //extend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            //extend.setTargetPosition(750);
+            extend.setPower(1.0);
+            hangstate = true;
+            complete = false;
+        }
+        previous = extend.getCurrentPosition();
+        return result;
+    }
 }
