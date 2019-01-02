@@ -415,7 +415,7 @@ public class QL_Auto_R1 extends OpMode {
      * Initialize the Tensor Flow Object Detection engine.
      */
     private void initTfod() {
-        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+        int tfodMonitorViewId = hardwareMap .appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
@@ -497,9 +497,12 @@ public class QL_Auto_R1 extends OpMode {
                     double dx = c * Math.cos(x) - 7.5;
                     double dy = c * Math.sin(x) + 8.0;
                     recog.add(new Pose2d(dx, dy, 0));
+
                 }
             }
         }
         return recog;
     }
+
+
 }
