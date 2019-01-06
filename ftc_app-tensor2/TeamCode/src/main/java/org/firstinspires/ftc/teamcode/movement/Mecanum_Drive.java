@@ -304,7 +304,7 @@ public class Mecanum_Drive{
             avgHeading = Math.toRadians(avgHeading);
         }
 
-        robotAngle = Math.atan2(center.y(), center.x());
+        robotAngle = (Math.atan2(center.y(), center.x()));// + robotHeading) / 2;
         //robotAngle = robotHeading; //todo: test if this even works
 
         double startx = center.norm() * Math.cos(heading + robotAngle);

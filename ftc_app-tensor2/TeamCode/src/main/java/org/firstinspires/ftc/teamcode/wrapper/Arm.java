@@ -109,7 +109,7 @@ public class Arm {
                         if (Math.abs(arm.getCurrentPosition() + 400) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.125) {
-                                arm.setTargetPosition(-700);
+                                arm.setTargetPosition(-600);
                                 arm.setPower(0.7);
                                 complete = false;
                                 cooldown.reset();
@@ -120,7 +120,7 @@ public class Arm {
                         }
                         break;
                     case STATE_CLEAR:
-                        if (Math.abs(arm.getCurrentPosition() + 700) < 25){
+                        if (Math.abs(arm.getCurrentPosition() + 600) < 25){
                             complete = true;
                             if (cooldown.time() >= 0.25) {
                                 arm.setTargetPosition(arm.getCurrentPosition());
@@ -201,7 +201,7 @@ public class Arm {
             }
             else{
                 back.setPosition(0.5);
-                speed = 0.35;
+                speed = 0.5;
                 bstate = true;
             }
             toggle.reset();

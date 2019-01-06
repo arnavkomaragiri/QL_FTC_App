@@ -160,7 +160,8 @@ public class QL_Auto_R1 extends OpMode {
                 break;
             case STATE_DROP:
                 //insert drop code once hanging is complete
-                if (hanger.drop()) {
+                hanger.drop();
+                if (hanger.getHang().getCurrentPosition() >= 7200) {
                     newState(State.STATE_EXTEND);
                     arm.move(1.0, 2, true);
                     drive.engage();
@@ -171,6 +172,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_EXTEND:
+                hanger.drop();
                 if (hanger.extend()){
                     newState(State.STATE_DELATCH);
                     drive.motor_reset();
@@ -181,6 +183,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_DELATCH:
+                hanger.drop();
                 if (drive.goTo(new Pose2d(0, 1, 0), telemetry,0.5, 1)){
                     telemetry.addData("Moving to sample: ", pose.toString());
                     newState(State.STATE_DELATCH2);
@@ -190,6 +193,7 @@ public class QL_Auto_R1 extends OpMode {
                 }
                 break;
             case STATE_DELATCH2:
+                hanger.drop();
                 if (drive.goTo(new Pose2d(5, 1, 0), telemetry,0.5, 1)){
                     telemetry.addData("Moving to sample: ", pose.toString());
                     newState(State.STATE_PREP);

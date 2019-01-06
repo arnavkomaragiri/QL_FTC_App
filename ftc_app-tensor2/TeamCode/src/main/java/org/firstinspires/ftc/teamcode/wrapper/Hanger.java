@@ -153,7 +153,7 @@ public class Hanger {
             extend.setTargetPosition(target);
             first = false;
         }
-        if (Math.abs(extend.getCurrentPosition() - target) <= 50){
+        if (Math.abs(extend.getCurrentPosition() - target) <= 75){
             complete = true;
             //if (cooldown2.time() >= 0.125) {
             extend.setTargetPosition(hang.getCurrentPosition());
