@@ -167,7 +167,7 @@ public class QL_Auto_R2 extends OpMode {
                 hanger.drop();
                 if (hanger.getHang().getCurrentPosition() >= 7200) {
                     newState(State.STATE_EXTEND);
-                    arm.move(1.0, 2, true);
+                    arm.move(-1.0, 2, true);
                     drive.engage();
                     telemetry.addData("Wheels on Ground: ", pose.toString());
                 }
@@ -251,7 +251,7 @@ public class QL_Auto_R2 extends OpMode {
                     telemetry.addData("Target Y: ", recog.peek().y());
                     chosen = recog.peek();
                 }
-                if (Math.abs(arm.getArm().getCurrentPosition() + 1450) < 10){
+                if (Math.abs(arm.getArm().getCurrentPosition() + 1450) < 50){
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
                     newState(State.STATE_DROP);
@@ -361,7 +361,7 @@ public class QL_Auto_R2 extends OpMode {
                 arm.move(0.0, 1, true);
                 telemetry.addData("Transferring: ", pose.toString());
                 if (arm.getmTransferState() == 1){
-                    newState(State.STATE_CENTER2);
+                    newState(State.STATE_SECURE);
                 }
                 break;
             case STATE_CENTER2:
@@ -382,6 +382,8 @@ public class QL_Auto_R2 extends OpMode {
                 if (mStateTime.time() >= time){
                     drive.drive(0.0, Math.PI, 0.0, 0.0);
                     drive.odoReset();
+                    box_left.setPosition(0.15);
+                    box_right.setPosition(0.85);
                     if (pos == 0){
                         //marker.setPosition(0.3);
                         newState(State.STATE_POSITION);

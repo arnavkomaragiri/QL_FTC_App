@@ -1,37 +1,26 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Bitmap;
-import android.graphics.Color;
-
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.I2cAddr;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.teamcode.control.DStarLite;
 import org.firstinspires.ftc.teamcode.control.Pose2d;
 import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
 import org.firstinspires.ftc.teamcode.wrapper.Arm;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
 import org.firstinspires.ftc.teamcode.wrapper.Hanger;
 import org.firstinspires.ftc.teamcode.wrapper.Tracker_Wheel;
-import org.firstinspires.ftc.teamcode.wrapper.sensors.QL_Encoder;
 
 /**
  * Created by arnav on 10/22/2017.
  */
 //@Disabled
-@TeleOp(name="four_bot_tele", group="Teleop")
-public class fourbot_tele extends OpMode{
+@TeleOp(name="ALTERNATE_four_bot", group="Alternate")
+public class fourbot_tele_alt extends OpMode{
     DcMotor motors[] = new DcMotor[4];
     DcMotor arm1;
     DcMotor sweeper;
@@ -50,7 +39,6 @@ public class fourbot_tele extends OpMode{
     ElapsedTime precision = new ElapsedTime();
     Pose2d pose = new Pose2d(0, 0, 0);
     Gimbel g;
-    double pos = 0.42;
     Tracker_Wheel wheel;
 
     public void init(){
@@ -60,7 +48,7 @@ public class fourbot_tele extends OpMode{
         motors[3] = hardwareMap.dcMotor.get("back_right");
         wheel = new Tracker_Wheel(hardwareMap);
         
-        hanger = new Hanger(hardwareMap, true);
+        hanger = new Hanger(hardwareMap);
 
         arm1 = hardwareMap.get(DcMotor.class, "arm");
         sweeper = hardwareMap.get(DcMotor.class, "sweeper");
@@ -131,16 +119,15 @@ public class fourbot_tele extends OpMode{
         else if (gamepad1.dpad_right){
             marker.setPosition(0.8);
         }*/
-
         if (gamepad2.left_bumper && cooldown.time() > 0.25){
             if (!flip){
-                if (arm.getBState()) {
+                if (!arm.getBState()) {
                     box_left.setPosition(0.0);
                     box_right.setPosition(1.0);
                 }
                 else{
-                    box_left.setPosition(0.075);
-                    box_right.setPosition(0.925);
+                    box_left.setPosition(0.15);
+                    box_right.setPosition(0.85);
                 }
                 flip = true;
             }

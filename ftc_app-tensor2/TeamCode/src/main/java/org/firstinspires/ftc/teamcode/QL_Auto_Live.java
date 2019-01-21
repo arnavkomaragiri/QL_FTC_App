@@ -276,7 +276,7 @@ public class QL_Auto_Live extends OpMode {
                             break;
                     }
                     if (first2) {
-                        newState(State.STATE_CORNER);
+                        newState(State.STATE_SECURE);
                         first2 = false;
                     }
                     else{
@@ -308,13 +308,13 @@ public class QL_Auto_Live extends OpMode {
                 telemetry.addData("Sampling: ", pose.toString());
                 switch (pos){
                     case 0:
-                        dest2 = new Pose2d(-14 * Math.sqrt(2), 24 * Math.sqrt(2), 0);
+                        dest2 = new Pose2d(-12 * Math.sqrt(2), 18 * Math.sqrt(2), 0);
                         break;
                     case 1:
-                        dest2 = new Pose2d(0, 24 * Math.sqrt(2), 0);
+                        dest2 = new Pose2d(0, 18 * Math.sqrt(2), 0);
                         break;
                     case 2:
-                        dest2 = new Pose2d(14 * Math.sqrt(2), 24 * Math.sqrt(2), 0);
+                        dest2 = new Pose2d(12 * Math.sqrt(2), 18 * Math.sqrt(2), 0);
                         break;
                     default:
                         dest2 = new Pose2d(0, 0, 0);
@@ -335,7 +335,7 @@ public class QL_Auto_Live extends OpMode {
                             newState(State.STATE_STOP);
                             break;
                     }
-                    newState(State.STATE_COLLECT);
+                    newState(State.STATE_STOP);
                 }
                 break;
             case STATE_COLLECT:

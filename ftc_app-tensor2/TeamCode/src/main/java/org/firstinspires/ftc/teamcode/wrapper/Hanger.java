@@ -22,6 +22,17 @@ public class Hanger {
 
     public Hanger(HardwareMap h){
         hang = h.get(DcMotor.class, "hang");
+        hang.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang.setTargetPosition(hang.getCurrentPosition());
+        hang.setPower(1.0);
+        extend = h.get(DcMotor.class,"extend");
+    }
+
+    public Hanger(HardwareMap h, boolean rand){
+        hang = h.get(DcMotor.class, "hang");
+        hang.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         extend = h.get(DcMotor.class,"extend");
     }
 
@@ -43,14 +54,12 @@ public class Hanger {
 
     public boolean drop(){
         int pos = 10000;
-        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        hang.setTargetPosition(pos);
+        hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         hang.setPower(1.0);
 
-        if (Math.abs(hang.getCurrentPosition() - pos) < 10){
-            hang.setTargetPosition(hang.getCurrentPosition());
+        if (Math.abs(hang.getCurrentPosition()) > pos){
             hang.setPower(0.0);
-            hang.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             return true;
         }
         else{
@@ -81,7 +90,7 @@ public class Hanger {
             jam.reset();
             first = false;
         }
-        if (Math.abs(extend.getCurrentPosition() - 850) <= 50 || jam.time() >= 2.0){
+        if (Math.abs(extend.getCurrentPosition() - 1000) <= 50 || jam.time() >= 2.0){
             complete = true;
             //if (cooldown2.time() >= 0.125) {
                 //extend.setTargetPosition(hang.getCurrentPosition());
@@ -105,7 +114,7 @@ public class Hanger {
     }
 
     public void operate(Gamepad g){
-        if (g.dpad_up){
+        if (g.x){
             hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             hang.setTargetPosition(7300);
             hang.setPower(1.0);
@@ -115,7 +124,7 @@ public class Hanger {
 
         if (Math.abs(hang.getCurrentPosition() - 7300) < 10){
             complete = true;
-            if (cooldown2.time() >= 1.0) {
+            if (cooldown2.time() >= 0.1) {
                 hang.setTargetPosition(hang.getCurrentPosition());
                 hang.setPower(0.0);
                 hang.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);

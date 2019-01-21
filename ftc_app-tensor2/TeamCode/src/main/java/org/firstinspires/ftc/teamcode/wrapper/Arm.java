@@ -13,12 +13,14 @@ public class Arm {
     private QL_Servo back;
     private int state = 0;
     private int offset = 0;
-    private boolean bstate = true;
+    private boolean bstate = true; //todo: READ: BALL STATE
+    private boolean alternate = false;
     private ElapsedTime cooldown = new ElapsedTime();
     private ElapsedTime toggle = new ElapsedTime();
+    private ElapsedTime clearTime = new ElapsedTime();
     boolean complete = false;
     boolean engage = false;
-    private double speed = 0.4;
+    private double speed = 0.5;
 
     private State mTransferState = State.STATE_END;
 
@@ -41,12 +43,23 @@ public class Arm {
         this.sweeper = sweeper;
         this.arm = arm;
         this.back = new QL_Servo(back);
-        back.setPosition(0.5);
+        back.setPosition(0.41);
         //arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         //arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
-    
+
+    public Arm(DcMotor sweeper, DcMotor arm, Servo back, boolean alt){
+        this.sweeper = sweeper;
+        this.arm = arm;
+        this.back = new QL_Servo(back);
+        back.setPosition(0.41);
+        alternate = true;
+        //arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
     public void setArm(DcMotor arm){
         this.arm = arm;
     }
@@ -189,20 +202,25 @@ public class Arm {
     private void newState(State s){
         mTransferState = s;
     }
+
+    public double getArmPos(){
+        return arm.getCurrentPosition() - offset;
+    }
     
     public void move(Gamepad g){
         //arm.setPower(g.right_stick_y * 0.5);
 
-        if (g.dpad_down && toggle.time() >= 0.25){
-            if (bstate){
-                back.setPosition(0.25);
-                speed = 1.0;
-                bstate = false;
-            }
-            else{
-                back.setPosition(0.5);
-                speed = 0.5;
-                bstate = true;
+        if (toggle.time() >= 0.2){
+            if (g.dpad_down && !g.dpad_left) {
+                if (bstate) {
+                    back.setPosition(0.3);
+                    speed = 0.9;
+                    bstate = false;
+                } else {
+                    back.setPosition(0.41);
+                    speed = 0.45;
+                    bstate = true;
+                }
             }
             toggle.reset();
         }
@@ -238,7 +256,7 @@ public class Arm {
             mTransferState = State.STATE_END;
             state = 2;
         }
-        else if (g.x){
+        /*else if (g.x){
             if (Math.abs(arm.getCurrentPosition() + 700 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
@@ -251,10 +269,10 @@ public class Arm {
             }
             mTransferState = State.STATE_END;
             state = 3;
-        }
+        }*/
 
         if (arm.getCurrentPosition() >= (-700 - offset) && state == 1){
-            back.setPosition(0.6);
+            back.setPosition(0.41);
         }
         /*else{
             if (state == 2 && Math.abs(arm.getCurrentPosition() + 1450) > 25 && (back.getPosition() != 0.25 || back.getPosition() != 0.5)) {
@@ -320,11 +338,12 @@ public class Arm {
             case 2:
                 if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 25) {
                     complete = true;
-                    if (bstate){
-                        back.setPosition(0.5);
-                    }
-                    else{
-                        back.setPosition(0.3);
+                    if (!g.dpad_left) {
+                        if (bstate) {
+                            back.setPosition(0.41);
+                        } else {
+                            back.setPosition(0.3);
+                        }
                     }
                     if (cooldown.time() >= 1.0) {
                         arm.setTargetPosition(arm.getCurrentPosition());
@@ -356,11 +375,29 @@ public class Arm {
         //if (engage){
             //sweeper.setPower(1.0);
         //}
+        if (clearTime.time() >= 0.25){
+            if (g.dpad_left){
+                back.setPosition(0.6);
+                speed = 1.0;
+            }
+            else{
+                if (state != 1) {
+                    if (bstate) {
+                        back.setPosition(0.41);
+                        speed = 0.45;
+                    } else {
+                        back.setPosition(0.3);
+                        speed = 0.9;
+                    }
+                }
+            }
+            clearTime.reset();
+        }
         if (g.right_trigger != 0) {
             sweeper.setPower(-g.right_trigger * speed);
         }
         else {
-            sweeper.setPower(g.left_trigger);
+            sweeper.setPower(g.left_trigger * 0.7);
         }
     }
 

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsAnalogOpticalDistanceSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsTouchSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
@@ -23,6 +24,7 @@ import com.qualcomm.robotcore.util.RobotLog;
  * Created by Arnav on 10/8/2017.
  */
 @Autonomous(name = "State: QL_Auto_R2_X",group = "State:")
+@Disabled
 public class QL_Auto_R2_X extends OpMode{
     private State mRobotState;
     private boolean mResetEncoder = false;

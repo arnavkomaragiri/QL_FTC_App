@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.movement;
 
+import android.content.Context;
+
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -7,17 +9,25 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.control.Pose2d;
 import org.firstinspires.ftc.teamcode.control.Vector2d;
 import org.firstinspires.ftc.teamcode.wrapper.Tracker_Wheel;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 public class Mecanum_Drive{
     private DcMotor motors[] = new DcMotor[4];
     private ModernRoboticsI2cGyro gyro;
     private Tracker_Wheel odometer;
     private ElapsedTime cooldown = new ElapsedTime();
+    private double modifier = 1.0;
 
     private Pose2d p = new Pose2d(0, 0, 0);
     private Pose2d memo = new Pose2d(0, 0, 0);
@@ -83,6 +93,47 @@ public class Mecanum_Drive{
 
     public Pose2d getPos(){
         return p;
+    }
+
+    public void setModifier(double d){
+        this.modifier = d;
+    }
+
+    public double getModifier(){
+        return this.modifier;
+    }
+
+    public void loadModifier(Context c){
+        modifier = Double.parseDouble(readFromFile(c));
+    }
+
+    private String readFromFile(Context context) {
+        String ret = "";
+
+        try {
+            InputStream inputStream = context.openFileInput("modifier.txt");
+
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
+
+                inputStream.close();
+                ret = stringBuilder.toString();
+            }
+        }
+        catch (FileNotFoundException e) {
+            RobotLog.e("login activity", "File not found: " + e.toString());
+        } catch (IOException e) {
+            RobotLog.e("login activity", "Can not read file: " + e.toString());
+        }
+
+        return ret;
     }
 
     public void drive(Gamepad gamepad1) {
@@ -269,12 +320,12 @@ public class Mecanum_Drive{
         double x = 0.0, y = 0.0;
 
         for (int i = 0; i < 4; i++){
-            double pos = motors[i].getCurrentPosition() * 0.63782834439;
+            double pos = motors[i].getCurrentPosition() * 0.63782834439 * modifier;
             double distance = (pos - prevpos[i]) / 1120;
             distance *= 3;
             distance *= 4 * Math.PI;
             v[i] = new Vector2d(distance, (i == 1 || i == 2) ? distance * -1 : distance);
-            prevpos[i] = motors[i].getCurrentPosition() * 0.63782834439;
+            prevpos[i] = motors[i].getCurrentPosition() * 0.63782834439 * modifier;
         }
 
         Vector2d left = v[0].normalize(v[2]); //normalize by averaging x and y coordinates

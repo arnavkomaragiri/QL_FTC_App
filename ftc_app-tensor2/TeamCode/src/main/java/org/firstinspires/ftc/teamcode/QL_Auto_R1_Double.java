@@ -21,8 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-@Autonomous(name = "QL_Auto_R1", group = "Competition")
-public class QL_Auto_R1 extends OpMode {
+@Autonomous(name = "QL_Auto_R1_Double", group = "Competition")
+public class QL_Auto_R1_Double extends OpMode {
     DcMotor motors[] = new DcMotor[4];
     DcMotor arm1;
     DcMotor sweeper;
@@ -104,6 +104,7 @@ public class QL_Auto_R1 extends OpMode {
         STATE_DELATCH2,
         STATE_PREP,
         STATE_SAMPLE,
+        STATE_SAMPLE2,
         STATE_CENTER,
         STATE_TRANSFER,
         STATE_CHECKPOINT,
@@ -436,12 +437,12 @@ public class QL_Auto_R1 extends OpMode {
                 break;
             case STATE_RETURN:
                 telemetry.addData("Returning: ", drive.getOdoDistance());
-                    drive.drive(0.8, Math.toRadians(92), 0, 0);
-                    if (drive.getOdoDistance() >= 40) {
-                        drive.drive(0.0, 0.0, 0.0, 0.0);
-                        drive.motor_reset();
-                        newState(State.STATE_STOP);
-                    }
+                drive.drive(0.8, Math.toRadians(92), 0, 0);
+                if (drive.getOdoDistance() >= 40) {
+                    drive.drive(0.0, 0.0, 0.0, 0.0);
+                    drive.motor_reset();
+                    newState(State.STATE_STOP);
+                }
                 break;
             case STATE_STOP:
                 telemetry.addData("Ta-Da (insert jazz hands)", pose.toString());
@@ -457,8 +458,8 @@ public class QL_Auto_R1 extends OpMode {
                 break;
         }
         //if (mRunTime.time() >= 0.5) {
-            //pose = drive.track();
-            //mRunTime.reset();
+        //pose = drive.track();
+        //mRunTime.reset();
         //}
     }
 
