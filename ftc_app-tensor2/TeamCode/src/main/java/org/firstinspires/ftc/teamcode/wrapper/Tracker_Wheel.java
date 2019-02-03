@@ -8,6 +8,7 @@ import org.firstinspires.ftc.teamcode.wrapper.sensors.QL_Encoder;
 public class Tracker_Wheel {
     QL_Encoder odometer;
     Servo tension;
+    boolean engaged = false;
 
     public Tracker_Wheel(HardwareMap h){
         odometer = new QL_Encoder(h);
@@ -35,12 +36,18 @@ public class Tracker_Wheel {
         odometer.reset();
     }
 
+    public boolean isEngaged(){
+        return engaged;
+    }
+
     public void engage(){
         tension.setPosition(0.0);
+        engaged = true;
     }
 
     public void disengage(){
         tension.setPosition(1.0);
+        engaged = false;
     }
 
     public double getDistance(){

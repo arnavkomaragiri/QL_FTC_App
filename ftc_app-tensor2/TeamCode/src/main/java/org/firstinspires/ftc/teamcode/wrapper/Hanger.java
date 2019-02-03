@@ -116,13 +116,13 @@ public class Hanger {
     public void operate(Gamepad g){
         if (g.x){
             hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            hang.setTargetPosition(7300);
+            hang.setTargetPosition(7500);
             hang.setPower(1.0);
             hangstate = true;
             complete = false;
         }
 
-        if (Math.abs(hang.getCurrentPosition() - 7300) < 10){
+        if (Math.abs(hang.getCurrentPosition() - 7500) < 10){
             complete = true;
             if (cooldown2.time() >= 0.1) {
                 hang.setTargetPosition(hang.getCurrentPosition());

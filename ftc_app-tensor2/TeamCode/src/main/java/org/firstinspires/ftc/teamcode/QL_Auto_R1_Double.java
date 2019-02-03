@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -31,6 +32,7 @@ public class QL_Auto_R1_Double extends OpMode {
     Arm arm;
     double radius = 24.5;
     double heading = -53.0;
+    double offset = 0.0;
     private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
     private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
@@ -105,6 +107,7 @@ public class QL_Auto_R1_Double extends OpMode {
         STATE_PREP,
         STATE_SAMPLE,
         STATE_SAMPLE2,
+        STATE_CENTER2,
         STATE_CENTER,
         STATE_TRANSFER,
         STATE_CHECKPOINT,
@@ -114,6 +117,7 @@ public class QL_Auto_R1_Double extends OpMode {
         STATE_ALIGN,
         STATE_TRAVEL,
         STATE_TRAVEL2,
+        STATE_TRAVEL3,
         STATE_RETURN,
         STATE_SECURE,
         STATE_STOP
@@ -213,7 +217,7 @@ public class QL_Auto_R1_Double extends OpMode {
                         newState(State.STATE_CENTER);
                     }
                     else{
-                        x = 3;
+                        x = 2;
                         newState(State.STATE_CENTER);
                     }
                 }
@@ -275,7 +279,7 @@ public class QL_Auto_R1_Double extends OpMode {
                     default:
                         dest = new Pose2d(0, 0, 0);
                 }
-                if (Math.abs(drive.getPos().x() - x_int) < 10){
+                if (Math.abs(drive.getPos().y() - x_int) < 10){
                     arm.move(-1.0, 2, true);
                 }
                 if (drive.goTo(dest, telemetry, 3.5)){// && !dest.equals(new Pose2d(0, 0, 0))){
@@ -345,6 +349,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 if (drive.turn(-45, 2, 0.3, telemetry)){
                     drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                     //drive.engage();
+                    drive.odoReset();
                     newState(State.STATE_TRAVEL);
                 }
                 break;
@@ -353,6 +358,9 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("Aligning", pose.toString());
                 if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7)){// && arm.getmTransferState() == 1){
                     memo = drive.getPos();
+                    offset = (-24 * Math.sqrt(2) - memo.x());
+                    offset /= Math.sqrt(2);
+                    offset = -((-offset + 24) * Math.tan(Math.toRadians(315 - drive.getGyro().getHeading()))) + offset;
                     //drive.disengage();
                     drive.engage();
                     newState(State.STATE_TURN);
@@ -390,6 +398,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 drive.drive(0.5, Math.PI, 0.0, 0.0);
                 if (mStateTime.time() >= 2.0){
                     drive.drive(0.0, Math.PI, 0.0, 0.0);
+                    drive.odoReset();
                     newState(State.STATE_TRAVEL2);
                 }
                 break;
@@ -407,29 +416,70 @@ public class QL_Auto_R1_Double extends OpMode {
                     newState(State.STATE_STOP);
                 }*/
                 arm.move(0.0, 3, true);
-                if (drive.getOdoDistance() <= -39){
+                double new_pos = -1;
+                double dist = -(pos == 0 ? 42 : 42) + (12 * (pos == 0 ? -0.5 : pos)) + offset - (pos == 0 ? 9 : 7);
+                if (pos == 1){
+                    dist -= 12;
+                }
+                if (drive.getOdoDistance() <= dist){
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     //marker.setPosition(0.3);
-                    box_left.setPosition(0.0);
-                    box_right.setPosition(1.0);
-                    if (mStateTime.time() >= 0.5) {
-                        drive.odoReset();
-                        newState(State.STATE_TURN3);
-                    }
+                    //box_left.setPosition(0.0);
+                    //box_right.setPosition(1.0);
+                    //drive.odoReset();
+                    newState(State.STATE_SAMPLE2);
                 }
                 else{
                     drive.drive(0.5, Math.toRadians(268), 0, 0);
                     mStateTime.reset();
                 }
                 break;
+            case STATE_SAMPLE2:
+                telemetry.addData("Tracker Pos: ", drive.getOdoDistance());
+                drive.drive(1.0, 0, 0.0, 0.0);
+                double time = 1 - ((pos - 1) * 0.5) + 0.25;
+                if (mStateTime.time() >= time){
+                    drive.drive(0.0, Math.PI, 0.0, 0.0);
+                    newState(State.STATE_CENTER2);
+                }
+                break;
+            case STATE_CENTER2:
+                telemetry.addData("Tracker Pos: ", drive.getOdoDistance());
+                drive.drive(1.0, Math.PI, 0.0, 0.0);
+                time = 1 - ((pos - 1) * 0.5) + 0.25;
+                if (mStateTime.time() >= time){
+                    drive.drive(0.0, Math.PI, 0.0, 0.0);
+                    newState(State.STATE_TRAVEL3);
+                }
+                break;
+            case STATE_TRAVEL3:
+                double prev_dist = drive.getOdoDistance();
+                double target = -39;
+                double direction = Range.clip(target - prev_dist, -0.7, 0.7);
+                telemetry.addData("Travelling 3: ", drive.getOdoDistance());
+                if (drive.getOdoDistance() <= target){
+                    drive.drive(0.0, 0.0, 0.0, 0.0);
+                    //marker.setPosition(0.3);
+                    box_left.setPosition(0.0); //todo: ADD THE SERVO FLIP
+                    box_right.setPosition(1.0);
+                    if (mStateTime.time() >= 0.0) {
+                        //drive.odoReset();
+                        newState(State.STATE_TURN3);
+                    }
+                }
+                else{
+                    drive.drive(-direction, Math.toRadians(268), 0, 0);
+                    mStateTime.reset();
+                }
+                break;
             case STATE_TURN3:
                 telemetry.addData("Turning Again Again (that's three turns now monkaS): ", drive.getRobotHeading());
                 if (mStateTime.time() >= 0.25) {
-                    if (drive.turn(-45, 1, 0.2, telemetry)) {
+                    if (drive.turn(-44, 1, 0.15, telemetry)) {
                         //drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                         //drive.engage();
                         drive.odoReset();
-                        if (mStateTime.time() >= 1.0) {
+                        if (mStateTime.time() >= 0.0) {
                             newState(State.STATE_RETURN);
                         }
                     }
@@ -437,8 +487,8 @@ public class QL_Auto_R1_Double extends OpMode {
                 break;
             case STATE_RETURN:
                 telemetry.addData("Returning: ", drive.getOdoDistance());
-                drive.drive(0.8, Math.toRadians(92), 0, 0);
-                if (drive.getOdoDistance() >= 40) {
+                drive.drive(1.0, Math.toRadians(92), 0, 0);
+                if (drive.getOdoDistance() >= 39.0) {
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     drive.motor_reset();
                     newState(State.STATE_STOP);
@@ -450,7 +500,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("X: ", chosen.x());
                 telemetry.addData("Y: ", chosen.y());
                 arm.move(0, 2, true);
-                if (mStateTime.time() >= 1.0) {
+                if (mStateTime.time() >= 0.0) {
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
                 }

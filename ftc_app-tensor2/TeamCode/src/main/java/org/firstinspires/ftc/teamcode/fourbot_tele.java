@@ -45,13 +45,24 @@ public class fourbot_tele extends OpMode{
     boolean flip = false;
     boolean mode = false;
     boolean flip2 = false;
+    boolean first = true;
+    boolean[] previous = {false, false, false};
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime cooldown2 = new ElapsedTime();
     ElapsedTime precision = new ElapsedTime();
+    ElapsedTime flip_time = new ElapsedTime();
     Pose2d pose = new Pose2d(0, 0, 0);
     Gimbel g;
     double pos = 0.42;
     Tracker_Wheel wheel;
+
+    private enum State{
+        STATE_LAUNCH,
+        STATE_BANK,
+        STATE_END
+    }
+
+    private State mBoxState = State.STATE_END;
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
@@ -69,12 +80,12 @@ public class fourbot_tele extends OpMode{
         box_right = hardwareMap.get(Servo.class, "box_right");
         backboard =  hardwareMap.get(Servo.class, "back");
         //marker = hardwareMap.get(Servo.class, "tm");
-        box_left.setPosition(0.85);
-        box_right.setPosition(0.15);
+        box_left.setPosition(0.8);
+        box_right.setPosition(0.2);
         backboard.setPosition(0.50);
         //marker.setPosition(0.3);
 
-        arm = new Arm(sweeper, arm1, backboard);
+        arm = new Arm(sweeper, arm1, backboard, hardwareMap.voltageSensor.get("Motor Controller 2"));
         g = new Gimbel(hardwareMap);
         g.GoTo(0.5, 0);
 
@@ -118,8 +129,8 @@ public class fourbot_tele extends OpMode{
             wheel.engage();
         }
 
-        if (precision.time() >= 0.5) {
-            pose = drive.track(telemetry);
+        if (precision.time() >= 0.125) {
+            pose = drive.k_track();
             precision.reset();
         }
         if (gamepad1.b){
@@ -132,39 +143,69 @@ public class fourbot_tele extends OpMode{
             marker.setPosition(0.8);
         }*/
 
-        if (gamepad2.left_bumper && cooldown.time() > 0.25){
+        if (isPress(gamepad2.left_bumper)){// && cooldown.time() > 0.25){
             if (!flip){
                 if (arm.getBState()) {
                     box_left.setPosition(0.0);
                     box_right.setPosition(1.0);
+                    newState(State.STATE_END);
                 }
                 else{
-                    box_left.setPosition(0.075);
-                    box_right.setPosition(0.925);
+                    box_left.setPosition(0.025);
+                    box_right.setPosition(0.975);
                 }
                 flip = true;
             }
             else {
-                box_left.setPosition(0.85);
-                box_right.setPosition(0.15);
+                box_left.setPosition(0.8);
+                box_right.setPosition(0.2);
+                newState(State.STATE_END);
                 flip = false;
             }
             cooldown.reset();
         }
-        if (gamepad2.right_bumper && cooldown2.time() > 0.25){
+        if (isPress(gamepad2.right_bumper,1)){// && cooldown2.time() > 0.25){
             if (!flip2) {
-                box_left.setPosition(0.7);
-                box_right.setPosition(0.3);
+                box_left.setPosition(0.6);
+                box_right.setPosition(0.4);
+                newState(State.STATE_END);
                 flip2 = true;
             }
             else{
-                box_left.setPosition(0.85);
-                box_right.setPosition(0.15);
+                box_left.setPosition(0.8);
+                box_right.setPosition(0.2);
+                newState(State.STATE_END);
                 flip2 = false;
             }
             cooldown2.reset();
         }
 
+        switch (mBoxState){
+            case STATE_LAUNCH:
+                if (first) {
+                    box_left.setPosition(0.05);
+                    box_right.setPosition(0.95);
+                    first = false;
+                }
+                if (flip_time.time() >= 1.0){
+                    newState(State.STATE_BANK);
+                    first = true;
+                }
+                break;
+            case STATE_BANK:
+                if (first) {
+                    box_left.setPosition(0.0);
+                    box_right.setPosition(1.0);
+                    first = false;
+                }
+                if (flip_time.time() >= 0.5){
+                    newState(State.STATE_END);
+                    first = true;
+                }
+                break;
+        }
+
+        telemetry.addData("Voltage: ", arm.getVoltage());
         telemetry.addData("Odometer: ", drive.getOdoDistance());
         telemetry.addData("Delta Distance: ", drive.getG_distance());
         telemetry.addData("Arm Pos: ", arm.getArmPos());
@@ -185,6 +226,43 @@ public class fourbot_tele extends OpMode{
         for (int i = 0; i < 4; i++){
             telemetry.addData("Pos: ", Double.toString((Math.PI * drive.getMotors()[i].getCurrentPosition()) / 140));
         }
+    }
+
+    private void newState(State s){
+        mBoxState = s;
+        flip_time.reset();
+    }
+    private boolean isPress(boolean input){
+        boolean result = false;
+        if (!previous[0] && input){
+            result = true;
+        }
+        else{
+            result = false;
+        }
+        previous[0] = input;
+        return result;
+    }
+    private boolean isPress(boolean input, int mode){
+        boolean result = false;
+        if (mode == 1) {
+            if (!previous[mode] && input) {
+                result = true;
+            } else if (previous[mode] && !input){
+                result = false;
+            }
+            previous[mode] = input;
+        }
+        else if (mode == 0){
+            if (!previous[0] && input){
+                result = true;
+            }
+            else{
+                result = false;
+            }
+            previous[0] = input;
+        }
+        return result;
     }
     private void logMessage( String sMsgHeader, String sMsg)
     {

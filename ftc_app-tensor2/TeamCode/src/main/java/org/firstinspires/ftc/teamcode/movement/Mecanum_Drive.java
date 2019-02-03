@@ -39,6 +39,13 @@ public class Mecanum_Drive{
     private double avgHeading = 0.0;
     private long sum = 0;
     private long count = 1;
+    private ElapsedTime trackTime = new ElapsedTime();
+
+    private double sigma1_x = 0.6; //todo: TUNE THIS
+    private double sigma1_y = 0.6; //todo: TUNE THIS
+    private double sigma2_x = 0.9; //todo: TUNE THIS
+    private double sigma2_y = 0.9; //todo: TUNE THIS
+
     double g_distance = 0.0;
 
     private boolean first = true;
@@ -85,6 +92,10 @@ public class Mecanum_Drive{
     public void calibrate(){
         odometer.reset();
         this.gyro.calibrate();
+    }
+
+    public ModernRoboticsI2cGyro getGyro(){
+        return this.gyro;
     }
 
     public void setPos(Pose2d p){
@@ -312,12 +323,10 @@ public class Mecanum_Drive{
     public Pose2d track(){
         Vector2d[] v = new Vector2d[4];
 
-        double heading = gyro.getHeading(); //todo: format heading
+        double heading = gyro.getHeading();
         double z = Math.toRadians(inverse(gyro.getIntegratedZValue()));
         double robotAngle = 0.0;
         heading = Math.toRadians(heading); //fix: mount gyro sideways bc I'm lazy LUL
-
-        double x = 0.0, y = 0.0;
 
         for (int i = 0; i < 4; i++){
             double pos = motors[i].getCurrentPosition() * 0.63782834439 * modifier;
@@ -330,7 +339,7 @@ public class Mecanum_Drive{
 
         Vector2d left = v[0].normalize(v[2]); //normalize by averaging x and y coordinates
         Vector2d right = v[1].normalize(v[3]); //normalize legs first, then normalize two legs together to get overall transposition
-        Vector2d center = left.normalize(right); //todo: insert rotational logic
+        Vector2d center = left.normalize(right);
         double distance = odometer.getDistance() - prevpos[4];
         g_distance = distance;
         if (Math.abs(distance) >= 0.5){ //todo: tune this
@@ -356,12 +365,81 @@ public class Mecanum_Drive{
         }
 
         robotAngle = (Math.atan2(center.y(), center.x()));// + robotHeading) / 2;
-        //robotAngle = robotHeading; //todo: test if this even works
+        //robotAngle = robotHeading;
 
         double startx = center.norm() * Math.cos(heading + robotAngle);
         double starty = center.norm() * Math.sin(heading + robotAngle);
 
         p = new Pose2d(p.x() + startx, p.y() + starty, heading);
+        return p;
+    }
+
+    public Pose2d k_track(){
+        Vector2d[] v = new Vector2d[4];
+
+        double heading = gyro.getHeading();
+        double z = Math.toRadians(inverse(gyro.getIntegratedZValue()));
+        double robotAngle = 0.0;
+        heading = Math.toRadians(heading); //fix: mount gyro sideways bc I'm lazy LUL
+
+        for (int i = 0; i < 4; i++){
+            double pos = motors[i].getCurrentPosition() * 0.63782834439 * modifier;
+            double distance = (pos - prevpos[i]) / 1120;
+            distance *= 3;
+            distance *= 4 * Math.PI;
+            v[i] = new Vector2d(distance, (i == 1 || i == 2) ? distance * -1 : distance);
+            prevpos[i] = motors[i].getCurrentPosition() * 0.63782834439 * modifier;
+        }
+
+        Vector2d left = v[0].normalize(v[2]); //normalize by averaging x and y coordinates
+        Vector2d right = v[1].normalize(v[3]); //normalize legs first, then normalize two legs together to get overall transposition
+        Vector2d center = left.normalize(right);
+        double distance = odometer.getDistance() - prevpos[4];
+        prevpos[4] = odometer.getDistance();
+        g_distance = distance;
+        /*if (Math.abs(distance) >= 0.5){
+            prevpos[4] = odometer.getDistance();
+            Vector2d v2 = new Vector2d(p.x() - memo.x(), p.y() - memo.y());
+            if (v2.y() != 0.0 && v2.norm() >= 0.5){
+                avgHeading = avgHeading + (Math.PI / 2);
+                avgHeading = avgHeading % (2 * Math.PI);
+                sum = 0;
+                count = 1;
+                double dist = distance * Math.sin(avgHeading);
+                double scale = dist / v2.y();
+                v2.multiplied(scale);
+                p = new Pose2d(memo.x() + v2.x(), memo.y() + v2.y(), 0);
+            }
+            memo = p;
+        }
+        else{
+            sum += this.gyro.getHeading();
+            avgHeading = sum / count;
+            count++;
+            avgHeading = Math.toRadians(avgHeading);
+        }*/
+
+        robotAngle = (Math.atan2(center.y(), center.x()));// + robotHeading) / 2;
+        //robotAngle = robotHeading;
+
+        double startx = center.norm() * Math.cos(heading + robotAngle);
+        double starty = center.norm() * Math.sin(heading + robotAngle);
+
+        double k_startx = (1.0 / Math.tan(robotHeading)) * distance;
+        double k_starty = distance;
+
+        double angle = Math.atan2(k_starty, k_startx) + heading;
+        double r = Math.hypot(k_startx, k_starty);
+
+        k_startx = r * Math.cos(angle);
+        k_starty = r * Math.sin(angle);
+
+        double kalman_gain_x = (Math.pow(sigma1_x, 2)) / (Math.pow(sigma1_x, 2) + Math.pow(sigma2_x, 2));
+        double kalman_gain_y = (Math.pow(sigma1_y, 2)) / (Math.pow(sigma1_y, 2) + Math.pow(sigma2_y, 2));
+        double f_startx = startx + (kalman_gain_x * (k_startx - startx));
+        double f_starty = starty + (kalman_gain_y * (k_starty - starty));
+
+        p = new Pose2d(p.x() + f_startx, p.y() + f_starty, heading);
         return p;
     }
 
@@ -372,7 +450,7 @@ public class Mecanum_Drive{
     public Pose2d track(Telemetry telemetry) {
         Vector2d[] v = new Vector2d[4];
 
-        double heading = Math.toRadians(gyro.getHeading()); //todo: format heading
+        double heading = Math.toRadians(gyro.getHeading());
         double z = Math.toRadians(inverse(gyro.getIntegratedZValue()));
         double robotAngle = 0.0;
         //heading = Math.toRadians(heading); //fix: mount gyro sideways bc I'm lazy LUL
@@ -390,11 +468,11 @@ public class Mecanum_Drive{
 
         Vector2d left = v[0].normalize(v[2]); //normalize by averaging x and y coordinates
         Vector2d right = v[1].normalize(v[3]); //normalize legs first, then normalize two legs together to get overall transposition
-        Vector2d center = left.normalize(right); //todo: insert rotational logic
+        Vector2d center = left.normalize(right);
         double distance = odometer.getDistance() - prevpos[4];
         g_distance = distance;
         telemetry.addData("Distance: ", distance);
-        if (Math.abs(distance) >= 0.10){ //todo: tune this
+        if (Math.abs(distance) >= 0.10){
             prevpos[4] = odometer.getDistance();
             Vector2d v2 = new Vector2d(p.x() - memo.x(), p.y() - memo.y());
             if (v2.y() != 0.0 && v2.norm() >= 0.5){
@@ -423,7 +501,7 @@ public class Mecanum_Drive{
         telemetry.addData("Robot True Heading: ", this.gyro.getHeading());
         telemetry.addData("Norm: ", center.norm());
         telemetry.addData("Total: ", heading + robotAngle);
-        //robotAngle = robotHeading; //todo: test if this even works
+        //robotAngle = robotHeading;
 
         double startx = center.norm() * Math.cos(heading + robotAngle);
         double starty = center.norm() * Math.sin(heading + robotAngle);

@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -59,6 +60,8 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
     private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
     Gimbel g;
+    Servo box_left;
+    Servo box_right;
     boolean pulse = false;
     double x = -1.0;
     double y = -1.0;
@@ -95,6 +98,10 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
         // first.
         initVuforia();
         g = new Gimbel(hardwareMap);
+        box_left = hardwareMap.get(Servo.class, "box_left");
+        box_right = hardwareMap.get(Servo.class, "box_right");
+        box_left.setPosition(0.8);
+        box_right.setPosition(0.2);
         g.GoTo(0.11, 0.178);
 
         if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
