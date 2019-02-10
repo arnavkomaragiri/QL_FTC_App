@@ -33,7 +33,6 @@ public class Mecanum_Drive{
     private Pose2d memo = new Pose2d(0, 0, 0);
     private double[] prevpos = new double[5];
     private double robotHeading = 0.0;
-    private double f_heading = 0.0;
     private double primary = 1.0;
     private double primaryAngle = 0.0;
     private double avgHeading = 0.0;
@@ -186,9 +185,12 @@ public class Mecanum_Drive{
     }
 
     public void f_drive(Gamepad gamepad1){
-        f_heading = this.gyro.getHeading() - 45;
         double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
-        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.toRadians(f_heading);
+        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+        double steer = gamepad1.right_trigger - gamepad1.left_trigger;
+        if (steer == 0.0){
+            angle -= Math.toRadians(this.gyro.getHeading());
+        }
         double rightX = gamepad1.right_stick_x;
         double rightY = gamepad1.right_stick_y;
 
@@ -198,10 +200,10 @@ public class Mecanum_Drive{
 
         Double[] v = {0.0, 0.0, 0.0, 0.0};
 
-        v[0] = (r * Math.cos(robotAngle)) + rightX;
-        v[1] = (r * Math.sin(robotAngle)) - rightX;
-        v[2] = (r * Math.sin(robotAngle)) + rightX;
-        v[3] = (r * Math.cos(robotAngle)) - rightX;
+        v[0] = (r * Math.cos(robotAngle)) + rightX - steer;
+        v[1] = (r * Math.sin(robotAngle)) - rightX + steer;
+        v[2] = (r * Math.sin(robotAngle)) + rightX - steer;
+        v[3] = (r * Math.cos(robotAngle)) - rightX + steer;
 
         for (int i = 0; i < 4; i++) {
             if (Math.abs(v[i]) > max) {
@@ -425,7 +427,7 @@ public class Mecanum_Drive{
         double startx = center.norm() * Math.cos(heading + robotAngle);
         double starty = center.norm() * Math.sin(heading + robotAngle);
 
-        double k_startx = (1.0 / Math.tan(robotHeading)) * distance;
+        double k_startx = (1.0 / Math.tan(robotHeading)) * (distance != 0 ? distance : startx);
         double k_starty = distance;
 
         double angle = Math.atan2(k_starty, k_startx) + heading;
@@ -626,6 +628,42 @@ public class Mecanum_Drive{
         if (dist > r) {
             t.addData("Moving: ", p.toString());
             drive(power, robotAngle, 0.0, 0.0);
+        }
+        else{
+            result = true;
+            first = true;
+            t.addData("Moving on: ", p.toString());
+            drive(0.0, 0, 0.0, 0.0);
+            motor_reset();
+        }
+        return result;
+    }
+
+    public boolean goThrough(Pose2d pos, Telemetry t, double spower, double r){
+        track();
+        boolean result = false;
+
+        double robotAngle = Math.atan2(pos.y() - p.x(), pos.x() - p.y()) - Math.toRadians(this.gyro.getHeading());
+        double e = pos.heading() - invert(this.gyro.getHeading());
+        if (e > 180){
+            e -= 360;
+        }
+        double trans = Range.clip(e, -1, 1);
+        t.addData("Trans:", trans);
+        t.addData("Angle: ", Math.toDegrees(robotAngle));
+        t.addData("X: ", this.p.x());
+        t.addData("Y: ", this.p.y());
+        double dist = pos.dist(new Pose2d(p.y(), p.x(), 0));
+        if (first){
+            primary = dist;
+            primaryAngle = robotAngle;
+            first = false;
+        }
+        t.addData("Dist: ", dist);
+        t.addData("Power: ", spower);
+        if (dist > r) {
+            t.addData("Moving: ", p.toString());
+            drive(spower, robotAngle, 0.0, 0.0);
         }
         else{
             result = true;

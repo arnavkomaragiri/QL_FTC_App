@@ -19,6 +19,7 @@ public class Hanger {
     private boolean first = true;
 
     private boolean hangstate = false;
+    private ElapsedTime matchTime = new ElapsedTime();
 
     public Hanger(HardwareMap h){
         hang = h.get(DcMotor.class, "hang");
@@ -50,6 +51,10 @@ public class Hanger {
 
     public DcMotor getExtend(){
         return this.extend;
+    }
+
+    public void resetMatchTime(){
+        matchTime.reset();
     }
 
     public boolean drop(){
@@ -90,7 +95,7 @@ public class Hanger {
             jam.reset();
             first = false;
         }
-        if (Math.abs(extend.getCurrentPosition() - 1000) <= 50 || jam.time() >= 2.0){
+        if (Math.abs(extend.getCurrentPosition() - 1100) <= 50 || jam.time() >= 2.0){
             complete = true;
             //if (cooldown2.time() >= 0.125) {
                 //extend.setTargetPosition(hang.getCurrentPosition());
@@ -114,7 +119,7 @@ public class Hanger {
     }
 
     public void operate(Gamepad g){
-        if (g.x){
+        if (g.b && matchTime.time() >= 3.0){
             hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             hang.setTargetPosition(7500);
             hang.setPower(1.0);
@@ -127,7 +132,7 @@ public class Hanger {
             if (cooldown2.time() >= 0.1) {
                 hang.setTargetPosition(hang.getCurrentPosition());
                 hang.setPower(0.0);
-                hang.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 hangstate = false;
                 cooldown.reset();
             }

@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
 import org.firstinspires.ftc.teamcode.wrapper.Arm;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
 import org.firstinspires.ftc.teamcode.wrapper.Hanger;
+import org.firstinspires.ftc.teamcode.wrapper.Sample_Wall;
 
 import java.util.Comparator;
 import java.util.List;
@@ -66,7 +67,8 @@ public class QL_Auto_R1_Double extends OpMode {
     private TFObjectDetector tfod;
     Servo box_left;
     Servo box_right;
-    //Servo marker;
+    Servo marker;
+    Sample_Wall wall;
     boolean flip = false;
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime precision = new ElapsedTime();
@@ -131,10 +133,11 @@ public class QL_Auto_R1_Double extends OpMode {
 
         box_left = hardwareMap.get(Servo.class, "box_left");
         box_right = hardwareMap.get(Servo.class, "box_right");
-        //marker = hardwareMap.get(Servo.class, "tm");
-        //marker.setPosition(1.0);
+        marker = hardwareMap.get(Servo.class, "tm");
+        marker.setPosition(1.0);
         box_left.setPosition(1.0);
         box_right.setPosition(0.0);
+        wall = new Sample_Wall(hardwareMap);
 
         arm = new Arm(sweeper, arm1, hardwareMap.get(Servo.class, "back"));
 
@@ -209,7 +212,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 }
                 break;
             case STATE_PREP:
-                if (hanger.contract()){
+                if (hanger.contract() || mStateTime.time() >= 3.0){
                     /*if (drive.goTo(new Pose2d(0, 1, 0), telemetry, 0.3, 1.5)){
                         newState(State.STATE_SAMPLE);
                     }*/
@@ -254,8 +257,8 @@ public class QL_Auto_R1_Double extends OpMode {
                     chosen = recog.peek();
                 }
                 if (Math.abs(arm.getArm().getCurrentPosition() + 1450) < 50){
-                    box_left.setPosition(0.85);
-                    box_right.setPosition(0.15);
+                    box_left.setPosition(0.925);
+                    box_right.setPosition(0.075);
                     newState(State.STATE_DROP);
                 }
                 break;
@@ -349,6 +352,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 if (drive.turn(-45, 2, 0.3, telemetry)){
                     drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                     //drive.engage();
+                    offset = ((-offset + 24) * Math.tan(Math.toRadians(drive.getGyro().getHeading() - 315))) + offset;
                     drive.odoReset();
                     newState(State.STATE_TRAVEL);
                 }
@@ -358,9 +362,9 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("Aligning", pose.toString());
                 if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7)){// && arm.getmTransferState() == 1){
                     memo = drive.getPos();
-                    offset = (-24 * Math.sqrt(2) - memo.x());
+                    offset = ((-24 * Math.sqrt(2)) - memo.x());
                     offset /= Math.sqrt(2);
-                    offset = -((-offset + 24) * Math.tan(Math.toRadians(315 - drive.getGyro().getHeading()))) + offset;
+                    //offset = -((-offset + 24) * Math.tan(Math.toRadians(315 - drive.getGyro().getHeading()))) + offset;
                     //drive.disengage();
                     drive.engage();
                     newState(State.STATE_TURN);
@@ -370,9 +374,9 @@ public class QL_Auto_R1_Double extends OpMode {
                 //arm.move(0.0, 1, true);
                 telemetry.addData("Centering: ", pose.toString());
                 if (pos == 0){
-                    x = -5;
+                    x = -3.5;
                 }
-                if (drive.goTo(new Pose2d(x, 1, 0), telemetry, 0.4, 1)){
+                if (drive.goTo(new Pose2d(x, 1, 0), telemetry, 0.4, 1.5)){
                     newState(State.STATE_SAMPLE);
                 }
                 break;
@@ -418,15 +422,16 @@ public class QL_Auto_R1_Double extends OpMode {
                 arm.move(0.0, 3, true);
                 double new_pos = -1;
                 double dist = -(pos == 0 ? 42 : 42) + (12 * (pos == 0 ? -0.5 : pos)) + offset - (pos == 0 ? 9 : 7);
-                if (pos == 1){
-                    dist -= 12;
-                }
-                if (drive.getOdoDistance() <= dist){
+                dist = -45 + (12 * (pos));// + offset;
+                telemetry.addData("Dist: ", dist);
+                telemetry.addData("Offset: ", offset);
+                if (drive.getOdoDistance() <= (dist - 6)){
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     //marker.setPosition(0.3);
                     //box_left.setPosition(0.0);
                     //box_right.setPosition(1.0);
                     //drive.odoReset();
+                    wall.engage();
                     newState(State.STATE_SAMPLE2);
                 }
                 else{
@@ -449,6 +454,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 time = 1 - ((pos - 1) * 0.5) + 0.25;
                 if (mStateTime.time() >= time){
                     drive.drive(0.0, Math.PI, 0.0, 0.0);
+                    wall.disengage();
                     newState(State.STATE_TRAVEL3);
                 }
                 break;
@@ -459,7 +465,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("Travelling 3: ", drive.getOdoDistance());
                 if (drive.getOdoDistance() <= target){
                     drive.drive(0.0, 0.0, 0.0, 0.0);
-                    //marker.setPosition(0.3);
+                    marker.setPosition(0.3);
                     box_left.setPosition(0.0); //todo: ADD THE SERVO FLIP
                     box_right.setPosition(1.0);
                     if (mStateTime.time() >= 0.0) {
@@ -475,7 +481,7 @@ public class QL_Auto_R1_Double extends OpMode {
             case STATE_TURN3:
                 telemetry.addData("Turning Again Again (that's three turns now monkaS): ", drive.getRobotHeading());
                 if (mStateTime.time() >= 0.25) {
-                    if (drive.turn(-44, 1, 0.15, telemetry)) {
+                    if (drive.turn(-44, 2, 0.15, telemetry)) {
                         //drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                         //drive.engage();
                         drive.odoReset();
@@ -488,7 +494,9 @@ public class QL_Auto_R1_Double extends OpMode {
             case STATE_RETURN:
                 telemetry.addData("Returning: ", drive.getOdoDistance());
                 drive.drive(1.0, Math.toRadians(92), 0, 0);
-                if (drive.getOdoDistance() >= 39.0) {
+                arm.move(0.0, 3, false);
+                double distance = (-(-45 + (12 * pos))) + 15;
+                if (drive.getOdoDistance() >= distance) {
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     drive.motor_reset();
                     newState(State.STATE_STOP);
@@ -499,10 +507,13 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("Pos: ", pos);
                 telemetry.addData("X: ", chosen.x());
                 telemetry.addData("Y: ", chosen.y());
-                arm.move(0, 2, true);
+                arm.move(1.0, 2, false);
                 if (mStateTime.time() >= 0.0) {
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
+                }
+                if (mStateTime.time() >= 1.5){
+                    arm.move(0.0, 2, false);
                 }
                 drive.drive(0.0, 0.0, 0.0, 0.0);
                 break;

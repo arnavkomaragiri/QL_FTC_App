@@ -100,8 +100,8 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
         g = new Gimbel(hardwareMap);
         box_left = hardwareMap.get(Servo.class, "box_left");
         box_right = hardwareMap.get(Servo.class, "box_right");
-        box_left.setPosition(0.8);
-        box_right.setPosition(0.2);
+        box_left.setPosition(1.0);
+        box_right.setPosition(0.0);
         g.GoTo(0.11, 0.178);
 
         if (ClassFactory.getInstance().canCreateTFObjectDetector()) {

@@ -50,6 +50,7 @@ public class Arm {
         this.arm = arm;
         this.back = new QL_Servo(back);
         back.setPosition(0.41);
+        this.sweeper.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         //arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         //arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -57,6 +58,7 @@ public class Arm {
 
     public Arm(DcMotor sweeper, DcMotor arm, Servo back, VoltageSensor voltage){
         this.sweeper = sweeper;
+        this.sweeper.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         this.arm = arm;
         this.back = new QL_Servo(back);
         this.voltage = voltage;
@@ -114,11 +116,9 @@ public class Arm {
             if (b_state) {
                 back.setPosition(0.25);
                 speed = 1.0;
-                bstate = false;
             } else {
                 back.setPosition(0.4);
                 speed = 0.5;
-                bstate = true;
             }
         }
 
@@ -196,10 +196,9 @@ public class Arm {
                 }
                 break;
             case 3:
-                mTransferState = State.STATE_END;
-                if (Math.abs(arm.getCurrentPosition() + 700) < 25) {
+                if (Math.abs(arm.getCurrentPosition() + 1200 + offset) < 25) {
                     complete = true;
-                    if (cooldown.time() >= 1.0) {
+                    if (cooldown.time() >= 2.0) {
                         arm.setTargetPosition(arm.getCurrentPosition());
                         arm.setPower(0.0);
                         complete = false;
@@ -209,9 +208,8 @@ public class Arm {
                     //engage = true;
                 }
                 else{
-                    arm.setTargetPosition(-700);
-                    arm.setPower(0.7);
-                    complete = false;
+                    arm.setTargetPosition(-1200);
+                    arm.setPower(1.0);
                 }
                 break;
         }
@@ -235,15 +233,15 @@ public class Arm {
             if (isPress(g.dpad_down) && !g.dpad_left) {
                 if (bstate) {
                     back.setPosition(0.3);
-                    speed = 0.75;
+                    speed = 0.9;
                     bstate = false;
                 } else {
                     back.setPosition(0.41);
-                    if (voltage != null && false) {
+                    if (false) {
                         speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
                     }
                     else{
-                        speed = 0.45;
+                        speed = 0.5;
                     }
                     bstate = true;
                 }
@@ -258,7 +256,7 @@ public class Arm {
             }
             else {
                 if (mTransferState == State.STATE_END){
-                    arm.setTargetPosition(-550 - offset);
+                    arm.setTargetPosition(-500 - offset);
                     arm.setPower(1.0);
                     arm_speed = 1.0;
                     complete = false;
@@ -284,20 +282,20 @@ public class Arm {
             mTransferState = State.STATE_END;
             state = 2;
         }
-        /*else if (g.x){
-            if (Math.abs(arm.getCurrentPosition() + 700 + offset) < 10){
+        else if (g.x){
+            if (Math.abs(arm.getCurrentPosition() + 1200 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
             }
             else {
-                arm.setTargetPosition(-600 - offset);
-                arm.setPower(-0.5);
+                arm.setTargetPosition(-1200 - offset);
+                arm.setPower(0.7);
                 complete = false;
             }
             mTransferState = State.STATE_END;
             state = 3;
-        }*/
+        }
 
         if (arm.getCurrentPosition() >= (-700 - offset) && state == 1){
             back.setPosition(0.4);
@@ -317,12 +315,7 @@ public class Arm {
         if (!complete){
             cooldown.reset();
         }
-        if (!g.b) {
-            if (previous[2]){
-                arm.setTargetPosition(prevPos);
-                arm.setPower(arm_speed);
-                previous[2] = false;
-            }
+
             switch (state) {
                 case 1:
                 /*if (Math.abs(arm.getCurrentPosition() + 450) < 25){
@@ -338,7 +331,7 @@ public class Arm {
                 }*/
                     switch (mTransferState) {
                         case STATE_TRANSFER:
-                            if (Math.abs(arm.getCurrentPosition() + 550 + offset) < 25) {
+                            if (Math.abs(arm.getCurrentPosition() + 500 + offset) < 25) {
                                 complete = true;
                                 if (cooldown.time() >= 0.75) {
                                     arm.setTargetPosition(-650 - offset);
@@ -351,7 +344,7 @@ public class Arm {
                                 }
                             }
                             else{
-                                arm.setTargetPosition(-550 - offset);
+                                arm.setTargetPosition(-500 - offset);
                                 arm.setPower(1.0);
                                 arm_speed = 1.0;
                                 complete = false;
@@ -401,9 +394,9 @@ public class Arm {
                     }
                     break;
                 case 3:
-                    if (Math.abs(arm.getCurrentPosition() + 600 + offset) < 25) {
+                    if (Math.abs(arm.getCurrentPosition() + 1200 + offset) < 25) {
                         complete = true;
-                        if (cooldown.time() >= 1.0) {
+                        if (cooldown.time() >= 2.0) {
                             arm.setTargetPosition(arm.getCurrentPosition());
                             arm.setPower(0.0);
                             complete = false;
@@ -414,13 +407,6 @@ public class Arm {
                     }
                     break;
             }
-        }
-        else{
-            prevPos = arm.getTargetPosition();
-            arm.setTargetPosition(-1000 - offset);
-            arm.setPower(0.7);
-            previous[2] = true;
-        }
         /*else if (g.right_stick_y == 0.0){
             arm.setPower(0.0);
         }*/
@@ -436,15 +422,15 @@ public class Arm {
                 if (state != 1) {
                     if (bstate) {
                         back.setPosition(0.41);
-                        if (voltage != null && false) {
+                        if (false) {
                             speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
                         }
                         else{
-                            speed = 0.45;
+                            speed = 0.5;
                         }
                     } else {
                         back.setPosition(0.3);
-                        speed = 0.85;
+                        speed = 0.9;
                     }
                 }
             }
@@ -469,7 +455,7 @@ public class Arm {
     }
 
     public void recalibrate(){
-        offset = -1450;
+        offset = arm.getCurrentPosition() - 1450;
     }
 
     private boolean isPress(boolean input){

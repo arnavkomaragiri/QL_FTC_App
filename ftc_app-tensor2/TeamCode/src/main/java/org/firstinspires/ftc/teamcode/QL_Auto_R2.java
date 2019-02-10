@@ -65,7 +65,7 @@ public class QL_Auto_R2 extends OpMode {
     private TFObjectDetector tfod;
     Servo box_left;
     Servo box_right;
-    //Servo marker;
+    Servo marker;
     boolean flip = false;
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime precision = new ElapsedTime();
@@ -130,8 +130,8 @@ public class QL_Auto_R2 extends OpMode {
 
         box_left = hardwareMap.get(Servo.class, "box_left");
         box_right = hardwareMap.get(Servo.class, "box_right");
-        //marker = hardwareMap.get(Servo.class, "tm");
-        //marker.setPosition(1.0);
+        marker = hardwareMap.get(Servo.class, "tm");
+        marker.setPosition(1.0);
         box_left.setPosition(1.0);
         box_right.setPosition(0.0);
 
@@ -407,7 +407,7 @@ public class QL_Auto_R2 extends OpMode {
                         newState(State.STATE_POSITION);
                     }
                     else{
-                        //marker.setPosition(0.3);
+                        marker.setPosition(0.3);
                         newState(State.STATE_TRAVEL2);
                     }
                 }
@@ -419,7 +419,7 @@ public class QL_Auto_R2 extends OpMode {
                 drive.drive(0.5, (3 * Math.PI) / 2, 0.0, 0.0);
                 if (drive.getOdoDistance() <= dist) {
                     drive.drive(0.0, (3 * Math.PI) / 2, 0.0, 0.0);
-                    //marker.setPosition(0.3);
+                    marker.setPosition(0.3);
                     newState(State.STATE_TRAVEL2);
                 }
                 break;
