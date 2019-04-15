@@ -161,7 +161,7 @@ public class Two_Axis_Localizer {
     }
 
     public double getRot(){
-        double heading = Math.toRadians(getHeading());
+        double heading = getHeading();
         if ((heading - previous) < -270){
             rot += (360 + (heading - previous)) / 360;
         } else if((heading - previous) > 270){
