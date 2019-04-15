@@ -81,21 +81,33 @@ public class Two_Axis_Localizer {
         double dy = (y.getDistance() - compute_rot_y(rotation)) - previous_y;
         dy *= DriveConstants.slippage_y;
         Vector2d offset = new Vector2d(dx, dy);
-        offset.rotated(gyro.getHeading());
+        offset.rotated(getHeading());
 
         pos = new Pose2d(pos.x() + offset.x(), pos.y() + offset.y(), gyro.getHeading());
         previous_x = x.getDistance() - compute_rot_x(rotation);
-        previous_y += y.getDistance() - compute_rot_y(rotation);
+        previous_y = y.getDistance() - compute_rot_y(rotation);
         return pos;
     }
 
     private double compute_rot_x(double heading){
         return 16.35 * heading - 0.05;
     }
+	
+	private double compute_rot_x_deg(double heading){
+		return 0.2854 * heading - 0.05;
+	}
+	
+	private double compute_rot_y_deg(double heading){
+		return -0.04939 * heading + 0.01;
+	}
 
     private double compute_rot_y(double heading){
         return -2.83 * heading + 0.01;
     }
+	
+	public void getHeading(){
+		return (0.996864 * ((0.985697 * ((0.969219 * this.gyro.getHeading())) + 0.486599) - 0.662445)) + 0.182906
+	}
 
     public Pose2d k_track(Vector2d move){
         Pose2d p1 = new Pose2d(pos.pos().added(move), this.gyro.getHeading());
@@ -150,7 +162,7 @@ public class Two_Axis_Localizer {
     }
 
     public double getRot(){
-        double heading = Math.toRadians(this.gyro.getHeading());
+        double heading = Math.toRadians(getHeading());
         if ((heading - previous) < -270){
             rot += (360 + (heading - previous)) / 360;
         } else if((heading - previous) > 270){
