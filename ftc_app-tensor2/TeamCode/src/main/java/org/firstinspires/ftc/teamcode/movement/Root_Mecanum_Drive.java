@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class Mecanum_Drive{
+public class Root_Mecanum_Drive{
     private DcMotor motors[] = new DcMotor[4];
     private ModernRoboticsI2cGyro gyro;
     private Tracker_Wheel odometer;
@@ -34,6 +34,7 @@ public class Mecanum_Drive{
     private double[] prevpos = new double[5];
     private double[] prevPowers = {-2.0, -2.0, -2.0, -2.0};
     private double robotHeading = 0.0;
+    private double robotPower = 0.0;
     private double primary = 1.0;
     private double primaryAngle = 0.0;
     private double avgHeading = 0.0;
@@ -48,17 +49,20 @@ public class Mecanum_Drive{
 
     private ElapsedTime diagnostics = new ElapsedTime();
 
-    protected static double drive_power = 0.0;
-
     double g_distance = 0.0;
 
     private boolean first = true;
 
-    public Mecanum_Drive(DcMotor names[], ModernRoboticsI2cGyro gyro, Tracker_Wheel odometer){
+    public Root_Mecanum_Drive(){
+        //i swear this is useful don't you dare delete it you moron
+    }
+
+    public Root_Mecanum_Drive(DcMotor names[], ModernRoboticsI2cGyro gyro, Tracker_Wheel odometer){
         motors = names.clone();
-        /*for (DcMotor motor : motors){
+        for (DcMotor motor : motors){
             motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }*/
+            motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        }
         this.gyro = gyro;
         this.gyro.calibrate();
         this.odometer = odometer;
@@ -66,7 +70,7 @@ public class Mecanum_Drive{
         motors[2].setDirection(DcMotor.Direction.REVERSE);
     }
 
-    public Mecanum_Drive(HardwareMap h){
+    public Root_Mecanum_Drive(HardwareMap h){
         this.gyro = (ModernRoboticsI2cGyro)h.gyroSensor.get("gyro");
         //this.gyro.calibrate();
         this.odometer = new Tracker_Wheel(h);
@@ -74,11 +78,13 @@ public class Mecanum_Drive{
         motors[1] = h.get(DcMotor.class, "up_right");
         motors[2] = h.get(DcMotor.class, "back_left");
         motors[3] = h.get(DcMotor.class, "back_right");
+        for (DcMotor motor : motors){
+            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        }
+
         motors[0].setDirection(DcMotor.Direction.REVERSE);
         motors[2].setDirection(DcMotor.Direction.REVERSE);
-        /*for (DcMotor motor : motors){
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }*/
     }
 
     public void setMotors(DcMotor names[]){
@@ -164,7 +170,7 @@ public class Mecanum_Drive{
     public void drive(Gamepad gamepad1) {
         double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
         r = Math.pow(r, 2);
-        drive_power = r;
+        robotPower = r;
         double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
         double rightX = gamepad1.right_stick_x;
         double rightY = gamepad1.right_stick_y;
@@ -197,53 +203,7 @@ public class Mecanum_Drive{
             v[i] *= scale;
             //System.out.println(v[i]);
             v[i] = Range.clip(v[i], -1.0, 1.0);
-            motors[i].setPower(v[i]);
-        }
-    }
-
-    public void b_drive(Gamepad gamepad1){
-        double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
-        r = Math.pow(r, 2);
-        r *= 0.5;
-        drive_power = r;
-        double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
-
-        if (odometer.getDistance() >= 29.287){
-            angle = Math.toRadians(270);
-        }
-        double rightX = gamepad1.right_stick_x;
-        rightX *= 0.3;
-        double rightY = gamepad1.right_stick_y;
-
-        robotHeading = angle;
-        double robotAngle = angle - Math.PI / 4;
-        double max = 0.0;
-
-        Double[] v = {0.0, 0.0, 0.0, 0.0};
-
-        v[0] = (r * Math.cos(robotAngle)) + rightX;
-        v[1] = (r * Math.sin(robotAngle)) - rightX;
-        v[2] = (r * Math.sin(robotAngle)) + rightX;
-        v[3] = (r * Math.cos(robotAngle)) - rightX;
-
-        for (int i = 0; i < 4; i++) {
-            if (Math.abs(v[i]) > max) {
-                max = Math.abs(v[i]);
-            }
-        }
-        if (max == 0) {
-            max = 1;
-        }
-        //System.out.println();
-        double scale = ((r == 0) ? Math.hypot(rightX, rightY) : r) / ((max == 0) ? ((r == 0) ? Math.hypot(rightX, rightY) : r) : max);
-        //System.out.println(scale);
-        //System.out.println();
-
-        for (int i = 0; i < 4; i++) {
-            v[i] *= scale;
-            //System.out.println(v[i]);
-            v[i] = Range.clip(v[i], -1.0, 1.0);
-            if (Math.abs(v[i] - prevPowers[i]) > 0.025) {
+            if (Math.abs(v[i] - prevPowers[i]) > 0.01) {
                 motors[i].setPower(v[i]);
                 prevPowers[i] = v[i];
             }
@@ -267,7 +227,7 @@ public class Mecanum_Drive{
 
     public void f_drive(Gamepad gamepad1){
         double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
-        drive_power = r;
+        robotPower = r;
         double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
         double steer = gamepad1.right_trigger - gamepad1.left_trigger;
         if (steer == 0.0){
@@ -304,7 +264,10 @@ public class Mecanum_Drive{
             v[i] *= scale;
             //System.out.println(v[i]);
             v[i] = Range.clip(v[i], -1.0, 1.0);
-            motors[i].setPower(v[i]);
+            if (Math.abs(v[i] - prevPowers[i]) > 0.01) {
+                motors[i].setPower(v[i]);
+                prevPowers[i] = v[i];
+            }
         }
     }
 
@@ -372,7 +335,7 @@ public class Mecanum_Drive{
 
     public void drive(double r, double angle, double rightX, double rightY) {
         robotHeading = angle;
-        drive_power = r;
+        robotPower = r;
         double robotAngle = angle - Math.PI / 4;
         double max = -1.0;
 
@@ -401,7 +364,10 @@ public class Mecanum_Drive{
             v[i] *= scale;
             //System.out.println(v[i]);
             v[i] = Range.clip(v[i], -1.0, 1.0);
-            motors[i].setPower(v[i]);
+            if (Math.abs(v[i] - prevPowers[i]) > 0.01) {
+                motors[i].setPower(v[i]);
+                prevPowers[i] = v[i];
+            }
         }
     }
 
@@ -854,6 +820,9 @@ public class Mecanum_Drive{
 
     public double getRobotHeading(){
         return this.robotHeading;
+    }
+    public double getRobotPower(){
+        return this.robotPower;
     }
 
     public double getMinimumDistance(){

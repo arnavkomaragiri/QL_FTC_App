@@ -29,14 +29,17 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsUsbDeviceInterfaceModule;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.util.TypeConversion;
+
+import org.firstinspires.ftc.teamcode.movement.Runner_Mecanum_Drive;
 
 import java.util.concurrent.locks.Lock;
 
@@ -220,4 +223,40 @@ public class ConceptI2cAddressChange extends LinearOpMode {
       writeLock.unlock();
     }
   }
+
+    public static class gyro_test extends OpMode {
+        Runner_Mecanum_Drive drive;
+        FtcDashboard dash;
+        Trajectory t;
+
+        public void init(){
+            dash = FtcDashboard.getInstance();
+            drive.setHardwareMap(hardwareMap);
+            drive = new Runner_Mecanum_Drive();
+            drive.disengage();
+        }
+
+        public void start(){
+            t = drive.trajectoryBuilder()
+                    .turnTo(Math.toRadians(90))
+                    .build();
+            drive.followTrajectory(t);
+        }
+
+        public void loop(){
+            if (drive.isFollowingTrajectory()){
+                drive.updateFollower();
+            }
+            else{
+                drive.drive(gamepad1);
+                if (gamepad1.a){
+                    dash.updateConfig();
+                    drive = new Runner_Mecanum_Drive();
+                    drive.followTrajectory(t);
+                }
+            }
+            telemetry.addData("Error: ", drive.getFollowingError());
+            telemetry.addData("Heading: ", Math.toRadians(drive.getExternalHeading()));
+        }
+    }
 }

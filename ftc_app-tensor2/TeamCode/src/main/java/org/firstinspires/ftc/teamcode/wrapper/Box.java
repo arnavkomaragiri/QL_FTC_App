@@ -9,11 +9,15 @@ public class Box {
     Servo box_left;
     Servo box_right;
 
+    Servo filter;
+
     boolean flip = false;
     boolean mode = false;
     boolean flip2 = false;
     boolean first = true;
+    boolean alt = false;
     boolean[] previous = {false, false, false};
+    boolean secured = false;
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime cooldown2 = new ElapsedTime();
 
@@ -35,33 +39,81 @@ public class Box {
     public Box(HardwareMap h){
         this.box_left = h.get(Servo.class, "box_left");
         this.box_right = h.get(Servo.class, "box_right");
-        init();
+        this.filter = h.get(Servo.class, "filter");
+        e_init();
     }
 
     public void init(){
-        box_left.setPosition(0.925);
-        box_right.setPosition(0.075);
+        box_left.setPosition(0.8875); //0.85
+        box_right.setPosition(0.1125); //0.15
+        filter.setPosition(0.316);
+    }
+
+    public void e_init(){
+        box_left.setPosition(0.85); //0.85
+        box_right.setPosition(0.15); //0.15
+        filter.setPosition(0.786);
+    }
+
+    public void setAlt(boolean alt){
+        this.alt = alt;
     }
 
     public void compress(){
         box_left.setPosition(1.0);
         box_right.setPosition(0.0);
+        filter.setPosition(0.316);
     }
 
     public void flip(boolean bState){
         if (bState){
-            box_left.setPosition(0.05);
-            box_right.setPosition(0.95);
+            //box_left.setPosition(0.075);
+            //box_right.setPosition(0.925);
+            box_left.setPosition(0.175);
+            box_right.setPosition(0.825);
         }
         else{
-            box_left.setPosition(0.15);
-            box_right.setPosition(0.85);
+            box_left.setPosition(0.175);
+            box_right.setPosition(0.825);
         }
+        secured = false;
+    }
+
+    public Servo getFilter(){
+        return this.filter;
+    }
+
+    public void flip(boolean bState, boolean fState){
+        if (bState){
+            //box_left.setPosition(0.075);
+            //box_right.setPosition(0.925);
+            box_left.setPosition(0.175);
+            box_right.setPosition(0.825);
+        }
+        else{
+            box_left.setPosition(0.175);
+            box_right.setPosition(0.825);
+        }
+        if (!fState){
+            filter.setPosition(0.316);
+        }
+        else{
+            filter.setPosition(0.474);
+        }
+        secured = false;
     }
 
     public void secure(){
-        box_left.setPosition(0.8);
-        box_right.setPosition(0.2);
+        box_left.setPosition(0.6);
+        box_right.setPosition(0.4);
+        if (filter.getPosition() != 0.474) {
+            filter.setPosition(0.316);
+        }
+        secured = true;
+    }
+
+    public boolean getSecured(){
+        return secured;
     }
 
     public void operate(Gamepad gamepad2, boolean bState){
@@ -71,8 +123,9 @@ public class Box {
             }
             else{
                 newState(State.STATE_END);
-                init();
+                e_init();
             }
+            secured = false;
         }
         if (isPress(gamepad2.right_bumper,1)){// && cooldown2.time() > 0.25){
             if (!flip2) {
@@ -82,19 +135,67 @@ public class Box {
             }
             else{
                 newState(State.STATE_END);
-                init();
+                e_init();
+                secured = false;
                 flip2 = false;
             }
         }
         switch (mFlipState){
             case STATE_FLIP:
-                flip(bState);
-                if (mStateTime.time() >= 0.8){
+                if (!alt) {
+                    flip(bState);
+                }
+                else{
+                    flip(!bState);
+                }
+                if (mStateTime.time() >= 0.9){
                     newState(State.STATE_RETURN);
                 }
                 break;
             case STATE_RETURN:
-                init();
+                e_init();
+                newState(State.STATE_END);
+                break;
+        }
+    }
+    public void operate(Gamepad gamepad2, boolean bState, boolean fState){
+        if (isPress(gamepad2.left_bumper)){// && cooldown.time() > 0.25){
+            if (!flip) {
+                newState(State.STATE_FLIP);
+            }
+            else{
+                newState(State.STATE_END);
+                e_init();
+            }
+            secured = false;
+        }
+        if (isPress(gamepad2.right_bumper,1)){// && cooldown2.time() > 0.25){
+            if (!flip2) {
+                newState(State.STATE_END);
+                secure();
+                flip2 = true;
+            }
+            else{
+                newState(State.STATE_END);
+                e_init();
+                secured = false;
+                flip2 = false;
+            }
+        }
+        switch (mFlipState){
+            case STATE_FLIP:
+                if (!alt) {
+                    flip(bState, fState);
+                }
+                else{
+                    flip(!bState, fState);
+                }
+                if (mStateTime.time() >= 0.9){
+                    newState(State.STATE_RETURN);
+                }
+                break;
+            case STATE_RETURN:
+                e_init();
                 newState(State.STATE_END);
                 break;
         }

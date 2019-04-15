@@ -272,9 +272,9 @@ public class QL_Auto_Live extends OpMode {
                         dest = new Pose2d(0, 0, 0);
                 }
                 if (Math.abs(drive.getPos().y() - x_int) < 10){
-                    arm.move(-1.0, 2, true);
+                    arm.move((first2 ? 1.0 : 0.0), (first2 ? 2 : 1), false);
                 }
-                if (drive.goTo(dest, telemetry, 3.5)){// && !dest.equals(new Pose2d(0, 0, 0))){
+                if (drive.goThrough(dest, telemetry, 1.0, 3.5)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
                     arm.move(0.0, 1, true);
                     switch (pos) {
@@ -292,29 +292,37 @@ public class QL_Auto_Live extends OpMode {
                             newState(State.STATE_TRANSFER);
                             break;
                     }
+                    if (!first2){
+                        newState(State.STATE_SECURE);
+                    }
                     //newState(State.STATE_SECURE);
                 }
                 break;
             case STATE_CORNER:
-                if (drive.goTo(new Pose2d(-12 * Math.sqrt(2), 0, 1), telemetry)){
-                    if (mStateTime.time() >= 1.0) {
-                        box_left.setPosition(0.0);
-                        box_right.setPosition(1.0);
-                        first2 = false;
-                        newState(State.STATE_CENTER);
-                    }
+                hanger.lift();
+                if (drive.goTo(new Pose2d(-6 * Math.sqrt(2), 2, 1), telemetry)){
+                    //first2 = false;
+                    newState(State.STATE_DUMP);
                 }
                 else{
                     mStateTime.reset();
                 }
                 break;
             case STATE_DUMP:
-                box_left.setPosition(0.0);
-                box_right.setPosition(1.0);
+                if (!first2) {
+                    box_left.setPosition(0.05);
+                    box_right.setPosition(0.95);
+                }
+                else{
+                    box_left.setPosition(0.15);
+                    box_right.setPosition(0.85);
+                }
                 if (mStateTime.time() >= 1.0){
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
-                    newState(State.STATE_SAMPLE);
+                    first2 = false;
+                    hanger.contract();
+                    newState(State.STATE_CENTER);
                 }
                 break;
             case STATE_SECURE:
@@ -325,7 +333,7 @@ public class QL_Auto_Live extends OpMode {
                         dest2 = new Pose2d(-12 * Math.sqrt(2), 18 * Math.sqrt(2), 0);
                         break;
                     case 1:
-                        dest2 = new Pose2d(0, 18 * Math.sqrt(2), 0);
+                        dest2 = new Pose2d(0, 18 * Math.sqrt(2) - 1.5, 0);
                         break;
                     case 2:
                         dest2 = new Pose2d(12 * Math.sqrt(2), 18 * Math.sqrt(2), 0);
@@ -335,7 +343,7 @@ public class QL_Auto_Live extends OpMode {
                 }
                 if (drive.goTo(dest2, telemetry, 0.4, 4)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
-                    arm.move(1.0, 2, first2);
+                    arm.move(1.0, 2, !first2);
                     switch (pos) {
                         case 0:
                             //radius = 23;
@@ -346,22 +354,24 @@ public class QL_Auto_Live extends OpMode {
                             break;
                         case 2:
                             drive.disengage();
-                            newState(State.STATE_STOP);
+                            newState(State.STATE_SECURE);
                             break;
                     }
-                    newState(State.STATE_STOP);
+                    newState(State.STATE_COLLECT);
+                    //newState(State.STATE_STOP);
                 }
                 break;
             case STATE_COLLECT:
-                if (mStateTime.time() >= 3.0){
-                    arm.move(0.0, 1, true);
-                    newState(State.STATE_CENTER);
+                if (mStateTime.time() >= 2.0){
+                    arm.move(0.0, 1, false);
+                    newState(State.STATE_TRANSFER);
                 }
                 break;
             case STATE_CENTER:
                 //arm.move(0.0, 1, true);
                 telemetry.addData("Centering: ", pose.toString());
-                if (drive.goTo(new Pose2d(0, 1, 0), telemetry, 0.3, 1.5)){
+                hanger.contract();
+                if (drive.goTo(new Pose2d(0, (first2 ? 1 : 3), 0), telemetry, 0.3, 1.5)){
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
                     if (first2) {
@@ -374,23 +384,27 @@ public class QL_Auto_Live extends OpMode {
                 break;
             case STATE_CENTER2:
                 //arm.move(0.0, 1, true);
-                telemetry.addData("Centering: ", pose.toString());
-                if (drive.goTo(new Pose2d(0, 1, 0), telemetry, 0.5, 3) && hanger.lift()){
-                    box_left.setPosition(0.9);
-                    box_right.setPosition(0.1);
-                    if (first2) {
-                        newState(State.STATE_CORNER);
-                    }
-                    else{
-                        newState(State.STATE_DUMP);
+                telemetry.addData("Centering 2: ", pose.toString());
+                hanger.cycle();
+                if (mStateTime.time() >= 0.5) {
+                    if (drive.goTo(new Pose2d(0, 2, 0), telemetry, 0.75, 3)) {
+                        box_left.setPosition(0.9);
+                        box_right.setPosition(0.1);
+                        if (first2) {
+                            newState(State.STATE_CORNER);
+                        } else {
+                            newState(State.STATE_DUMP);
+                        }
                     }
                 }
                 break;
             case STATE_TRANSFER:
-                arm.move(0.0, 1, true);
+                arm.move(1.0, 1, true);
+                drive.stop();
                 telemetry.addData("Transferring: ", pose.toString());
-                if (arm.getmTransferState() == 1){
+                if (arm.getmTransferState() == 2){
                     newState(State.STATE_CENTER2);
+                    arm.move(0.0, 1, true);
                 }
                 break;
             case STATE_STOP:

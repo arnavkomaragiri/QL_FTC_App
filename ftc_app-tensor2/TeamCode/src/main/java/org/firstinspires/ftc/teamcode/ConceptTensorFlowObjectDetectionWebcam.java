@@ -166,14 +166,8 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
                         }
                         //g.GoTo(68.82 / 90.0, -56.87 / 90.0);
                       }
-                      telemetry.addData("X: ", g.getPos().x());
-                      telemetry.addData("Y: ", g.getPos().y());
-                      telemetry.update();
                     }
                 }
-                telemetry.addData("Pos: ", getPos());
-                telemetry.addData("X: ", x);
-                telemetry.addData("Y: ", y);
             }
         }
 

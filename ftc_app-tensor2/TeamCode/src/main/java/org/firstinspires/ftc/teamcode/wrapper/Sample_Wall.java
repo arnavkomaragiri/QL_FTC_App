@@ -34,7 +34,7 @@ public class Sample_Wall {
     }
 
     public void engage(){
-        this.wall.setPosition(0.6);
+        this.wall.setPosition(0.68);
     }
 
     public void disengage(){

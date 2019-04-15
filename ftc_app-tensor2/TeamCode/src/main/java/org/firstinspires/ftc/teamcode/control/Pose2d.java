@@ -40,6 +40,10 @@ public class Pose2d {
         return new Pose2d(pos.added(other.pos), heading + other.heading);
     }
 
+    public Pose2d added(Vector2d other){
+        return new Pose2d(pos.added(other), heading);
+    }
+
     public Pose2d multiplied(double scalar) {
         return new Pose2d(scalar * x(), scalar * y(), scalar * heading());
     }

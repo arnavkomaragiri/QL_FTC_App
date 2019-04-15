@@ -6,6 +6,7 @@ public class QL_Encoder {
     private AnalogInput odo;
     private double previous = 0.0;
     private double rot = 0.0;
+    private double ratio = 3.0;
 
     public QL_Encoder(HardwareMap h){
         odo = h.analogInput.get("odometer");
@@ -15,6 +16,10 @@ public class QL_Encoder {
     public QL_Encoder(AnalogInput a){
         odo = a;
         previous = odo.getVoltage() * 72;
+    }
+
+    public void setRatio(double r){
+        this.ratio = r;
     }
 
     private double getDistance(double voltage){
@@ -28,7 +33,7 @@ public class QL_Encoder {
             rot += (heading - previous) / 360;
         }
         previous = heading;
-        return (6 * Math.PI * rot);
+        return (ratio * -3 * Math.PI * rot);
     }
 
     public double getDistance(){

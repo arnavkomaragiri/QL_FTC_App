@@ -1,12 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.util.Log;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -20,47 +17,40 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.control.DStarLite;
 import org.firstinspires.ftc.teamcode.control.Pose2d;
 import org.firstinspires.ftc.teamcode.movement.Mecanum_Drive;
 import org.firstinspires.ftc.teamcode.wrapper.Arm;
+import org.firstinspires.ftc.teamcode.wrapper.Box;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
 import org.firstinspires.ftc.teamcode.wrapper.Hanger;
+import org.firstinspires.ftc.teamcode.wrapper.Sample_Wall;
+import org.firstinspires.ftc.teamcode.wrapper.Slide;
 import org.firstinspires.ftc.teamcode.wrapper.Tracker_Wheel;
 import org.firstinspires.ftc.teamcode.wrapper.sensors.QL_Encoder;
-
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 
 /**
  * Created by arnav on 10/22/2017.
  */
 //@Disabled
-@Autonomous(name="four_bot_calibrate", group="Calibration")
-public class fourbot_calibrate extends OpMode{
+@TeleOp(name="four_bot_demo", group="Teleop")
+public class fourbot_demo extends OpMode{
     DcMotor motors[] = new DcMotor[4];
     DcMotor arm1;
     DcMotor sweeper;
     Mecanum_Drive drive;
     Hanger hanger;
     Arm arm;
-    Servo box_left;
-    Servo box_right;
+    Box box;
     Servo backboard;
-    //Servo marker;
-    ElapsedTime runtime = new ElapsedTime();
-    boolean flip = false;
+    Servo marker;
+    Slide slide;
+    Sample_Wall wall;
     boolean mode = false;
-    boolean flip2 = false;
-    double modifier = 1.0;
-    double t_distance = 48.0;
-    Pose2d previous = new Pose2d(0, 0, 0);
-    ElapsedTime cooldown = new ElapsedTime();
-    ElapsedTime cooldown2 = new ElapsedTime();
     ElapsedTime precision = new ElapsedTime();
     Pose2d pose = new Pose2d(0, 0, 0);
     Gimbel g;
+    double pos = 0.42;
     Tracker_Wheel wheel;
 
     public void init(){
@@ -70,77 +60,65 @@ public class fourbot_calibrate extends OpMode{
         motors[3] = hardwareMap.dcMotor.get("back_right");
         wheel = new Tracker_Wheel(hardwareMap);
 
-        hanger = new Hanger(hardwareMap);
+        hanger = new Hanger(hardwareMap, true);
 
         arm1 = hardwareMap.get(DcMotor.class, "arm");
         sweeper = hardwareMap.get(DcMotor.class, "sweeper");
 
-        box_left = hardwareMap.get(Servo.class, "box_left");
-        box_right = hardwareMap.get(Servo.class, "box_right");
-        backboard =  hardwareMap.get(Servo.class, "back");
-        //marker = hardwareMap.get(Servo.class, "tm");
-        box_left.setPosition(0.99);
-        box_right.setPosition(0.01);
-        backboard.setPosition(0.50);
-        //marker.setPosition(0.3);
+        wall = new Sample_Wall(hardwareMap);
 
-        arm = new Arm(sweeper, arm1, backboard);
+        box = new Box(hardwareMap);
+        backboard =  hardwareMap.get(Servo.class, "back");
+        marker = hardwareMap.get(Servo.class, "tm");
+        backboard.setPosition(0.50);
+        marker.setPosition(0.3);
+        slide = new Slide(hardwareMap);
+
+        arm = new Arm(sweeper, arm1, backboard, hardwareMap.voltageSensor.get("Motor Controller 2"));
         g = new Gimbel(hardwareMap);
         g.GoTo(0.5, 0);
 
         drive = new Mecanum_Drive(motors, hardwareMap.get(ModernRoboticsI2cGyro.class, "gyro"), wheel);
+        drive.engage();
         //drive.enable();
     }
 
     public void start(){
         telemetry.addData("LEGGO BOYS MAX 2 USUALLY 3: ", "idk what to put here");
-        //marker.setPosition(1.0);
-        runtime.reset();
+        marker.setPosition(1.0);
+        drive.motor_reset();
     }
     public void loop(){
         if (!mode) {
-            drive.drive(gamepad1);
+            drive.b_drive(gamepad1);
         }
         else{
-            drive.drive(gamepad1);
+            drive.b_drive(gamepad1);
         }
 
-        //modifier = drive.getModifier();
-
-        if (gamepad1.a && runtime.time() >= 1.0 && cooldown.time() >= 1.0){
+        if (false){
             if (mode){
-                double dist = Math.abs(drive.track().x() - previous.x());
-                modifier = t_distance / dist;
                 mode = false;
             }
             else{
-                drive.setPos(new Pose2d(0, 0, 0));
-                drive.motor_reset();
                 mode = true;
+                drive.calibrate();
             }
-            cooldown.reset();
         }
         else if (gamepad1.b){
             telemetry.addData("Arm Successfully Recalibrated: "
                     , arm.getArmPos());
             arm.recalibrate();
         }
-        else if (gamepad1.y){
-            telemetry.addData("Updated Modifier Saved: ", modifier);
-            writeToFile(Double.toString(modifier), hardwareMap.appContext);
-            drive.loadModifier(hardwareMap.appContext);
-            drive.setPos(new Pose2d(0, 0, 0));
-            drive.motor_reset();
-        }
-        else if (gamepad1.x){
-            modifier = 1.0;
-            telemetry.addData("Modifier Reset: ", modifier);
-            writeToFile(Double.toString(modifier), hardwareMap.appContext);
-        }
 
-        hanger.operate(gamepad2, gamepad1);
+        //hanger.operate(gamepad2, gamepad1);
         arm.move(gamepad2);
+        //box.operate(gamepad2, arm.getBState());
+        slide.operate(gamepad2, arm.getBState(), telemetry, gamepad1);
 
+        if (gamepad1.right_bumper){
+            marker.setPosition(0.3);
+        }
         if (gamepad1.dpad_up){
             wheel.disengage();
         }
@@ -148,8 +126,15 @@ public class fourbot_calibrate extends OpMode{
             wheel.engage();
         }
 
-        if (precision.time() >= 0.5) {
-            pose = drive.track(telemetry);
+        if (gamepad1.dpad_left){
+            wall.engage();
+        }
+        else if (gamepad1.dpad_right){
+            wall.disengage();
+        }
+
+        if (precision.time() >= 0.125) {
+            pose = drive.k_track();
             precision.reset();
         }
         if (gamepad1.b){
@@ -161,43 +146,9 @@ public class fourbot_calibrate extends OpMode{
         else if (gamepad1.dpad_right){
             marker.setPosition(0.8);
         }*/
-        if (gamepad2.left_bumper && cooldown.time() > 0.25){
-            if (!flip){
-                if (arm.getBState()) {
-                    box_left.setPosition(0.0);
-                    box_right.setPosition(1.0);
-                }
-                else{
-                    box_left.setPosition(0.15);
-                    box_right.setPosition(0.85);
-                }
-                flip = true;
-            }
-            else {
-                box_left.setPosition(0.85);
-                box_right.setPosition(0.15);
-                flip = false;
-            }
-            cooldown.reset();
-        }
-        if (gamepad2.right_bumper && cooldown2.time() > 0.25){
-            if (!flip2) {
-                box_left.setPosition(0.7);
-                box_right.setPosition(0.3);
-                flip2 = true;
-            }
-            else{
-                box_left.setPosition(0.85);
-                box_right.setPosition(0.15);
-                flip2 = false;
-            }
-            cooldown2.reset();
-        }
 
-        t_distance += (gamepad1.dpad_up ? 0.1 : (gamepad1.dpad_down ? -0.1 : 0));
-
-        telemetry.addData("Modifier: ", modifier);
-        telemetry.addData("Target Distance", t_distance);
+        telemetry.addData("Voltage: ", arm.getVoltage());
+        telemetry.addData("Mode: ", (mode ? "Field Centric" : "Robot Centric"));
         telemetry.addData("Odometer: ", drive.getOdoDistance());
         telemetry.addData("Delta Distance: ", drive.getG_distance());
         telemetry.addData("Arm Pos: ", arm.getArmPos());
@@ -216,23 +167,14 @@ public class fourbot_calibrate extends OpMode{
         telemetry.addData("Time: ", precision.time());
         telemetry.addData("Min: ", drive.getMinimumDistance());
         for (int i = 0; i < 4; i++){
-            telemetry.addData("Pos: ", Double.toString((Math.PI * drive.getMotors()[i].getCurrentPosition()) / 140));
+            telemetry.addData("Pos: ", Double.toString((3 * drive.getMotors()[i].getCurrentPosition())));
         }
     }
+
     private void logMessage( String sMsgHeader, String sMsg)
     {
         telemetry.addData(sMsgHeader, sMsg);
         RobotLog.ii("8719", getRuntime()+ "%s :: %s", sMsgHeader, sMsg);
-    }
-    private void writeToFile(String data, Context context) {
-        try {
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput("modifier.txt", Context.MODE_PRIVATE));
-            outputStreamWriter.write(data);
-            outputStreamWriter.close();
-        }
-        catch (IOException e) {
-            RobotLog.e("Exception", "File write failed: " + e.toString());
-        }
     }
 }
 

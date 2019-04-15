@@ -220,7 +220,7 @@ public class QL_Auto_R1_Double extends OpMode {
                         newState(State.STATE_CENTER);
                     }
                     else{
-                        x = 2;
+                        x = 3;
                         newState(State.STATE_CENTER);
                     }
                 }
@@ -257,8 +257,8 @@ public class QL_Auto_R1_Double extends OpMode {
                     chosen = recog.peek();
                 }
                 if (Math.abs(arm.getArm().getCurrentPosition() + 1450) < 50){
-                    box_left.setPosition(0.925);
-                    box_right.setPosition(0.075);
+                    box_left.setPosition(0.99);
+                    box_right.setPosition(0.01);
                     newState(State.STATE_DROP);
                 }
                 break;
@@ -269,23 +269,24 @@ public class QL_Auto_R1_Double extends OpMode {
                 switch (pos){
                     case 0:
                         x_int = -12 * Math.sqrt(2) - 3 + 2;
-                        dest = new Pose2d(-12 * Math.sqrt(2) - 3 + 2, 12 * Math.sqrt(2) - 2 - 2, 0);
+                        dest = new Pose2d(-12 * Math.sqrt(2) - 4 - 2 + 2, 12 * Math.sqrt(2) - 2 + 2 + 2 - 2, 0);
                         break;
                     case 1:
                         x_int = 0;
-                        dest = new Pose2d(0, 12 * Math.sqrt(2) - 3 - 2, 0);
+                        dest = new Pose2d(0, 12 * Math.sqrt(2) - 3 - 2 + 2 + 2 - 2, 0);
                         break;
                     case 2:
                         x_int = 12 * Math.sqrt(2) + 0 - 2;
-                        dest = new Pose2d(12 * Math.sqrt(2) + 0 - 2, 12 * Math.sqrt(2) - 3 - 2, 0);
+                        dest = new Pose2d(12 * Math.sqrt(2) + 0 - 2 - 2 + 2 + 6, 12 * Math.sqrt(2) - 3 - 2 + 2 + 2 - 2, 0);
                         break;
                     default:
                         dest = new Pose2d(0, 0, 0);
                 }
+
                 if (Math.abs(drive.getPos().y() - x_int) < 10){
                     arm.move(-1.0, 2, true);
                 }
-                if (drive.goTo(dest, telemetry, 3.5)){// && !dest.equals(new Pose2d(0, 0, 0))){
+                if (drive.goTo(dest, telemetry, 0.4, 3.0)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
                     arm.move(0.0, 1, true);
                     switch (pos) {
@@ -303,6 +304,7 @@ public class QL_Auto_R1_Double extends OpMode {
                             newState(State.STATE_TRANSFER);
                             break;
                     }
+                    newState(State.STATE_ALIGN);
                     //newState(State.STATE_SECURE);
                 }
                 break;
@@ -322,9 +324,9 @@ public class QL_Auto_R1_Double extends OpMode {
                     default:
                         dest2 = new Pose2d(0, 0, 0);
                 }
-                if (drive.goTo(dest2, telemetry, 0.4, 4)){// && !dest.equals(new Pose2d(0, 0, 0))){
+                if (drive.goTo(dest2, telemetry, 0.4, 3)){// && !dest.equals(new Pose2d(0, 0, 0))){
                     //kill motors
-                    arm.move(0.0, 1, true);
+                    arm.move(0.0, 1, false);
                     switch (pos) {
                         case 0:
                             //radius = 23;
@@ -349,7 +351,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 break;
             case STATE_TURN:
                 arm.move(0.0, 1, true);
-                if (drive.turn(-45, 2, 0.3, telemetry)){
+                if (drive.turn(-50, 2, 0.2, telemetry)){
                     drive.setPos(new Pose2d(12 * Math.sqrt(2), -24 * Math.sqrt(2), 315));
                     //drive.engage();
                     offset = ((-offset + 24) * Math.tan(Math.toRadians(drive.getGyro().getHeading() - 315))) + offset;
@@ -360,23 +362,29 @@ public class QL_Auto_R1_Double extends OpMode {
             case STATE_ALIGN:
                 //arm.move(0.0, 1, true);
                 telemetry.addData("Aligning", pose.toString());
-                if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2), 315), telemetry, 7)){// && arm.getmTransferState() == 1){
+                if (arm.getmTransferState() != 1) {
+                    arm.move(0.0, 1, true);
+                }
+                if (drive.goTo(new Pose2d(-24 * Math.sqrt(2), 12 * Math.sqrt(2) - 3 - 2 + 2 + 2 - 2, 315), telemetry, 1.0, 5)){// && arm.getmTransferState() == 1){
                     memo = drive.getPos();
-                    offset = ((-24 * Math.sqrt(2)) - memo.x());
-                    offset /= Math.sqrt(2);
-                    //offset = -((-offset + 24) * Math.tan(Math.toRadians(315 - drive.getGyro().getHeading()))) + offset;
                     //drive.disengage();
                     drive.engage();
                     newState(State.STATE_TURN);
                 }
                 break;
             case STATE_CENTER:
-                //arm.move(0.0, 1, true);
+                hanger.contract();
                 telemetry.addData("Centering: ", pose.toString());
                 if (pos == 0){
-                    x = -3.5;
+                    x = -6;
                 }
-                if (drive.goTo(new Pose2d(x, 1, 0), telemetry, 0.4, 1.5)){
+                if (drive.goTo(new Pose2d(x, (true ? 1.5 : 2), 0), telemetry, (pos == 2 ? 0.3 : 0.35), (pos == 2 ? 0.5 : 0.75))){
+                    if (pos == 1) {
+                        drive.engage();
+                    }
+                    else{
+                        drive.disengage();
+                    }
                     newState(State.STATE_SAMPLE);
                 }
                 break;
@@ -425,7 +433,7 @@ public class QL_Auto_R1_Double extends OpMode {
                 dist = -45 + (12 * (pos));// + offset;
                 telemetry.addData("Dist: ", dist);
                 telemetry.addData("Offset: ", offset);
-                if (drive.getOdoDistance() <= (dist - 6)){
+                if (drive.getOdoDistance() <= (dist - 12)){
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     //marker.setPosition(0.3);
                     //box_left.setPosition(0.0);
@@ -442,9 +450,11 @@ public class QL_Auto_R1_Double extends OpMode {
             case STATE_SAMPLE2:
                 telemetry.addData("Tracker Pos: ", drive.getOdoDistance());
                 drive.drive(1.0, 0, 0.0, 0.0);
+                arm.move(0.0, 1, true);
                 double time = 1 - ((pos - 1) * 0.5) + 0.25;
                 if (mStateTime.time() >= time){
                     drive.drive(0.0, Math.PI, 0.0, 0.0);
+                    wall.disengage();
                     newState(State.STATE_CENTER2);
                 }
                 break;
@@ -454,7 +464,6 @@ public class QL_Auto_R1_Double extends OpMode {
                 time = 1 - ((pos - 1) * 0.5) + 0.25;
                 if (mStateTime.time() >= time){
                     drive.drive(0.0, Math.PI, 0.0, 0.0);
-                    wall.disengage();
                     newState(State.STATE_TRAVEL3);
                 }
                 break;
@@ -507,13 +516,15 @@ public class QL_Auto_R1_Double extends OpMode {
                 telemetry.addData("Pos: ", pos);
                 telemetry.addData("X: ", chosen.x());
                 telemetry.addData("Y: ", chosen.y());
-                arm.move(1.0, 2, false);
                 if (mStateTime.time() >= 0.0) {
                     box_left.setPosition(0.9);
                     box_right.setPosition(0.1);
                 }
                 if (mStateTime.time() >= 1.5){
-                    arm.move(0.0, 2, false);
+                    arm.move(0.0, 2, true);
+                }
+                else{
+                    arm.move(1.0, 2, true);
                 }
                 drive.drive(0.0, 0.0, 0.0, 0.0);
                 break;
