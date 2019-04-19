@@ -52,7 +52,7 @@ public class Box {
     public void e_init(){
         box_left.setPosition(0.85); //0.85
         box_right.setPosition(0.15); //0.15
-        filter.setPosition(0.892);
+        filter.setPosition(0.895);
     }
 
     public void setAlt(boolean alt){
@@ -85,8 +85,8 @@ public class Box {
 
     public void flip(boolean bState, boolean fState){
         if (bState && !fState){
-            box_left.setPosition(0.075);
-            box_right.setPosition(0.925);
+            box_left.setPosition(0.0);
+            box_right.setPosition(1.0);
             //box_left.setPosition(0.175);
             //box_right.setPosition(0.825);
         }
@@ -95,14 +95,14 @@ public class Box {
             box_right.setPosition(0.825);
         }
         else{
-            box_left.setPosition(0.125);
-            box_right.setPosition(0.875);
+            box_left.setPosition(0.175);
+            box_right.setPosition(0.825);
         }
         if (!fState){
             filter.setPosition(0.316);
         }
         else{
-            filter.setPosition(0.434);
+            filter.setPosition(0.469);
         }
         secured = false;
     }
@@ -111,7 +111,7 @@ public class Box {
         box_left.setPosition(0.6);
         box_right.setPosition(0.4);
         if (filter.getPosition() != 0.434) {
-            filter.setPosition(0.316);
+            //filter.setPosition(0.316);
         }
         secured = true;
     }
@@ -120,10 +120,10 @@ public class Box {
         box_left.setPosition(0.6);
         box_right.setPosition(0.4);
         if (fState){
-            filter.setPosition(0.434);
+            filter.setPosition(0.469);
         }
         else{
-            filter.setPosition(0.316);
+            //filter.setPosition(0.316);
         }
         secured = true;
     }

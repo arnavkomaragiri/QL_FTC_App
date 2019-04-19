@@ -67,8 +67,12 @@ public class odo_test extends OpMode {
         //telemetry.addData("X Data: ", data1);
         //telemetry.addData("Y Data: ", data2);
 
-        telemetry.addData("X Position: ", drive.getDrive().getPositioner().getX().getDistance());
-        telemetry.addData("Y Position: ", drive.getDrive().getPositioner().getY().getDistance());
+        telemetry.addData("Localizer Position: ", drive.getDrive().getPositioner().track());
+        telemetry.addData("Heading Rotation Sum: ", drive.getDrive().getPositioner().getRot());
+
+        telemetry.addData("Power: ", gamepad1.left_stick_y);
+        telemetry.addData("X Position: ", drive.getDrive().getPositioner().getX().getDistance() * DriveConstants.slippage_x);
+        telemetry.addData("Y Position: ", drive.getDrive().getPositioner().getY().getDistance() * DriveConstants.slippage_y);
 
         telemetry.addData("Positions: ", drive.getWheelPositions());
 

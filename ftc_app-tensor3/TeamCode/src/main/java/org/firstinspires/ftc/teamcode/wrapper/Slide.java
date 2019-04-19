@@ -21,6 +21,10 @@ public class Slide {
 
     double time_offset = 0.0;
 
+    long previous_time = System.currentTimeMillis();
+
+    double int_latency = 0.0;
+
     private State mRobotState = State.STATE_END;
 
     private ElapsedTime mStateTime = new ElapsedTime();
@@ -137,6 +141,8 @@ public class Slide {
         double rate = 0.0;
         double predicted_time = 0.0;
         double final_time = 0.0;
+        long deltaTime = System.currentTimeMillis() - previous_time;
+        previous_time = System.currentTimeMillis();
 
         if (isPress(g.left_bumper)){
             if (Math.abs(g.right_stick_y) <= 0.5){// && inBounds(hanger.getExtend().getCurrentPosition())) {
@@ -147,6 +153,9 @@ public class Slide {
         else if (!busy){
             box.operate(g, (alt != bState), fState);
             hanger.operate(g, g2);
+        }
+        if (busy){
+            int_latency += deltaTime / 1000;
         }
         if (Math.abs(g.right_stick_y) > 0.5 && busy){
             box.e_init();
@@ -162,10 +171,10 @@ public class Slide {
                 if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : 200)){
                     rate = hanger.getExtend().getCurrentPosition() / mStateTime.time();
                     predicted_time = (1100 - hanger.getExtend().getCurrentPosition()) / rate;
-                    predicted_time += mStateTime.time();
+                    predicted_time += mStateTime.time() + (deltaTime / 1000);
                     time_offset = predicted_time - 0.9;
                     if (first){
-                        box_time = mStateTime.time() + (box.getSecured() ? 0.626 : 0.9); //todo: tune the 0.9 to match box flip speed, can't really do much without encoders/potentiometers
+                        box_time = mStateTime.time() + (box.getSecured() ? 0.626 : 0.9) + int_latency; //todo: tune the 0.9 to match box flip speed, can't really do much without encoders/potentiometers
                         first = false;
                     }
                 }
@@ -187,7 +196,7 @@ public class Slide {
                 }
                 t.addData("Time: ", final_time);
                 t.addData("Offset: ", time_offset);
-                if ((hanger.cycle(1100, 1100) && mStateTime.time() >= final_time + (fState ? 0.5 : 0.0)) || mStateTime.time() >= 1.5){
+                if ((hanger.cycle(1100, 1100) && mStateTime.time() >= final_time + (fState ? 0.5 : 0.0)) || (mStateTime.time() >= 1.5 + int_latency)){
                     newState(State.STATE_CONTRACT);
                 }
                 break;
@@ -197,6 +206,7 @@ public class Slide {
                     newState(State.STATE_END);
                     busy = false;
                     first = true;
+                    int_latency = 0.0;
                     //fState = false;
                 }
                 break;
@@ -253,7 +263,7 @@ public class Slide {
                 }
                 t.addData("Time: ", final_time);
                 t.addData("Offset: ", time_offset);
-                if ((hanger.cycle(1100, 1100) && mStateTime.time() >= final_time + (fState ? 0.5 : 0.0)) || mStateTime.time() >= 1.5){
+                if ((hanger.cycle(1100, 1100) && mStateTime.time() >= final_time + (fState ? 0.5 : 0.0)) || (mStateTime.time() >= 1.5 && hanger.getExtend().getCurrentPosition() >= 1000)){
                     newState(State.STATE_CONTRACT);
                 }
                 break;

@@ -193,7 +193,7 @@ public class Hanger {
         //}
         //}
         //else{
-            extend.setPower((g.dpad_up ? 1.0 : (g.dpad_down ? -1.0 : 0.0)));
+            extend.setPower((g.dpad_up ? 1.0 : (g.dpad_right ? -1.0 : 0.0)));
         //}
     }
 

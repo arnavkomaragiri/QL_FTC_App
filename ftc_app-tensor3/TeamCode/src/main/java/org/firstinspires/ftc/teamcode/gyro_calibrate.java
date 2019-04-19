@@ -77,6 +77,7 @@ public class gyro_calibrate extends OpMode {
         arm = new Arm(sweeper, arm1, backboard, hardwareMap.voltageSensor.get("Motor Controller 2"), hardwareMap.get(CRServo.class, "intake_left"), hardwareMap.get(CRServo.class, "intake_right"));
         g = new Gimbel(hardwareMap);
         g.GoTo(0.5, 0);
+        drive.engage();
     }
 
     public void start(){
@@ -114,7 +115,7 @@ public class gyro_calibrate extends OpMode {
                 //dash.updateConfig();
                 drive = new Runner_Mecanum_Drive();
                 drive.setDrive(hardwareMap);
-                drive.disengage();
+                //drive.disengage();
                 drive.followTrajectory(t);
             }
         }

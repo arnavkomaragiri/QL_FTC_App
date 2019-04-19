@@ -20,6 +20,9 @@ public class Two_Axis_Localizer {
     private double previous_x = 0.0;
     private double previous_y = 0.0;
 
+    private double previous_rot_x = 0.0;
+    private double previous_rot_y = 0.0;
+
     private Pose2d pos = new Pose2d(0.0, 0.0, 0.0);
 
     protected static double k_sigma_x = 2; //todo: tune these values
@@ -74,17 +77,18 @@ public class Two_Axis_Localizer {
     }
 
     public Pose2d track(){
-        double rotation = getRot() * (Math.PI / 180);
-        double dx = (x.getDistance() - compute_rot_x(rotation)) - previous_x;
+        double dx = (x.getDistance() - (compute_rot_x_deg())) - previous_x;
         dx *= DriveConstants.slippage_x;
-        double dy = (y.getDistance() - compute_rot_y(rotation)) - previous_y;
+        previous_rot_x = compute_rot_x_deg();
+        double dy = (y.getDistance() - (compute_rot_y_deg())) - previous_y;
         dy *= DriveConstants.slippage_y;
+        previous_rot_y = compute_rot_y_deg();
         Vector2d offset = new Vector2d(dx, dy);
-        offset.rotated(getHeading());
+        offset = offset.rotated(Math.toRadians(getHeading()));
 
-        pos = new Pose2d(pos.x() + offset.x(), pos.y() + offset.y(), gyro.getHeading());
-        previous_x = x.getDistance() - compute_rot_x(rotation);
-        previous_y = y.getDistance() - compute_rot_y(rotation);
+        pos = new Pose2d(pos.x() + offset.x(), pos.y() + offset.y(), getHeading());
+        previous_x = x.getDistance() - compute_rot_x_deg();
+        previous_y = y.getDistance() - compute_rot_y_deg();
         return pos;
     }
 
@@ -92,20 +96,16 @@ public class Two_Axis_Localizer {
         return (0.996864 * ((0.985697 * ((0.969219 * this.gyro.getHeading())) + 0.486599) - 0.662445)) + 0.182906;
     }
 
-    public double compute_rot_x(double heading){
-        return 16.35 * heading - 0.05;
-    }
-
-    public double compute_rot_x_deg(){
-        return ((0.2853613327 * getRot()) - 0.05);
-    }
-
-    public double compute_rot_y(double heading){
-        return -2.83 * heading + 0.01;
+    public double getIntegratedZValue(){
+        return (0.996864 * ((0.985697 * ((0.969219 * this.gyro.getIntegratedZValue())) + 0.486599) - 0.662445)) + 0.182906;
     }
 
     public double compute_rot_y_deg(){
-        return ((-0.0493928178 * getRot()) + 0.01);
+        return (-0.04385355193 * getIntegratedZValue());
+    }
+
+    public double compute_rot_x_deg(){
+        return (0.2814264903 * getIntegratedZValue());
     }
 
     public Pose2d k_track(Vector2d move){

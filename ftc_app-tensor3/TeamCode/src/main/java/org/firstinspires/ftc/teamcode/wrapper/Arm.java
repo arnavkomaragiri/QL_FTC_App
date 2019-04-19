@@ -20,7 +20,7 @@ public class Arm {
     private int state = 0;
     private int previous_state = 0;
     private int offset = 0;
-    private boolean bstate = true; //todo: READ: BALL STATE
+    private boolean bstate = true; //todo: READ: BALL STATE thanks m8 IOU
     private boolean alternate = false;
     private ElapsedTime cooldown = new ElapsedTime();
     private ElapsedTime toggle = new ElapsedTime();
@@ -222,8 +222,8 @@ public class Arm {
             }
             else {
                 arm.setTargetPosition(-1350 - offset);
-                arm.setPower(-0.75);
-                arm_speed = -0.75;
+                arm.setPower(-0.6);
+                arm_speed = -0.6;
                 complete = false;
                 completed = false;
             }
@@ -358,7 +358,7 @@ public class Arm {
                 break;
 
             case 2:
-                if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 25) {
+                if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 100) {
                     complete = true;
                     if (bstate) {
                         back.setPosition(0.342);
@@ -377,8 +377,8 @@ public class Arm {
                 }
                 else{
                     arm.setTargetPosition(-1350 - offset);
-                    arm.setPower(-0.75);
-                    arm_speed = -0.75;
+                    arm.setPower(-0.6);
+                    arm_speed = -0.6;
                     complete = false;
                 }
                 break;
@@ -482,29 +482,19 @@ public class Arm {
     }
     
     public void move(Gamepad g){
-        //arm.setPower(g.right_stick_y * 0.5);
-
-        //if (isPress(g.dpad_down)){
-            if (isPress(g.dpad_right) && !g.dpad_left) {
-                if (bstate) {
-                    back.setPosition(0.342);
-                    speed = 0.9;
-                    bstate = false;
-                } else {
-                    back.setPosition(0.342);
-                    if (false) {
-                        speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
-                    }
-                    else{
-                        speed = 0.5;
-                    }
-                    bstate = true;
-                }
+        if (isPress(g.dpad_down) && !g.dpad_left) {
+            if (bstate) { //todo: tune positions to drop filter
+                back.setPosition(0.377);
+                bstate = false;
+            } else {
+                back.setPosition(0.43);
+                bstate = true;
             }
-            //toggle.reset();
+        }
+        //toggle.reset();
         //}
         if (g.y){
-            if (Math.abs(arm.getCurrentPosition() + 550 + offset) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 500 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
@@ -514,7 +504,7 @@ public class Arm {
                     //arm.setTargetPosition(-500 - offset);
                     //arm.setPower(1.0);
                     //arm_speed = 1.0;
-                    error = sweeper.getCurrentPosition();
+                    error = 400;
                     armPos = arm.getCurrentPosition();
                     sweeper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sweeper.setTargetPosition(-50);
@@ -530,43 +520,43 @@ public class Arm {
             state = 1;
         }
         else if (g.a){
-            if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 60){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
             }
             else {
-                arm.setTargetPosition(-1350 - offset);
-                arm.setPower(-0.75);
-                arm_speed = -0.75;
+                arm.setTargetPosition(-1450 - offset);
+                arm.setPower(-0.6);
+                arm_speed = -0.6;
                 complete = false;
                 completed = false;
             }
             mTransferState = State.STATE_END;
             sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            sweeper.setPower(0.0);
+            sweeper.setPower(g.right_stick_y);
             state = 2;
         }
         else if (g.x){
-            if (Math.abs(arm.getCurrentPosition() + 1100 + offset) < 10){
+            if (Math.abs(arm.getCurrentPosition() + 1000 + offset) < 10){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
             }
             else {
-                arm.setTargetPosition(-1100 - offset);
+                arm.setTargetPosition(-1000 - offset);
                 arm.setPower(0.7);
                 complete = false;
                 completed = false;
             }
             mTransferState = State.STATE_END;
             sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            sweeper.setPower(0.0);
+            sweeper.setPower(g.right_stick_y);
             state = 3;
         }
 
-        if (arm.getCurrentPosition() >= (-700 - offset) && state == 1){
-            back.setPosition(0.43);
+        if (arm.getCurrentPosition() >= (-650 - offset) && state == 1){
+            back.setPosition(0.5);
         }
         /*else{
             if (state == 2 && Math.abs(arm.getCurrentPosition() + 1450) > 25 && (back.getPosition() != 0.25 || back.getPosition() != 0.5)) {
@@ -584,8 +574,8 @@ public class Arm {
             cooldown.reset();
         }
 
-            switch (state) {
-                case 1:
+        switch (state) {
+            case 1:
                 /*if (Math.abs(arm.getCurrentPosition() + 450) < 25){
                     complete = true;
                     if (cooldown.time() >= 1.0) {
@@ -597,105 +587,121 @@ public class Arm {
                         //engage = true;
                     }
                 }*/
-                    switch (mTransferState) {
-                        case STATE_TRANSFER:
-                            if (Math.abs(arm.getCurrentPosition() + 550 + offset) < 25){// && Math.abs(sweeper.getCurrentPosition()) < 25) {
-                                complete = true;
-                                if (cooldown.time() >= 0.1){
-                                    sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                                    sweeper.setPower(0.0);
-                                }
-                                if (cooldown.time() >= 0.75) {
-                                    arm.setTargetPosition(-600 - offset);
-                                    arm.setPower(1.0);
-                                    complete = false;
-                                    cooldown.reset();
-                                    slide_automated = false;
-                                    //sweeper.setPower(1.0);
-                                    //engage = true;
-                                    newState(State.STATE_CLEAR);
-                                }
+                switch (mTransferState) {
+                    case STATE_TRANSFER:
+                        if (Math.abs(arm.getCurrentPosition() + 500 + offset) < 25){// && Math.abs(sweeper.getCurrentPosition()) < 25) {
+                            complete = true;
+                            if (cooldown.time() >= 0.1){
+                                sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                                sweeper.setPower(g.right_stick_y);
                             }
-                            else{
-                                if (sweeper.getCurrentPosition() >= 100) {
-                                    double gain = (armPos + 550) / error;
-                                    int target = (int) Math.round((gain * sweeper.getCurrentPosition()) - 550);
-                                    arm.setTargetPosition(target - offset);
-                                    arm.setPower(1.0);
-                                }
-                                else {
-                                    arm.setTargetPosition(-550 - offset);
-                                    arm.setPower(1.0);
-                                }
-                                arm_speed = 1.0;
+                            if (cooldown.time() >= 1.5) {
+                                arm.setTargetPosition(-600 - offset);
+                                arm.setPower(1.0);
                                 complete = false;
+                                cooldown.reset();
+                                slide_automated = false;
+                                //sweeper.setPower(1.0);
+                                //engage = true;
+                                newState(State.STATE_CLEAR);
                             }
-                            break;
-                        case STATE_CLEAR:
-                            if (Math.abs(arm.getCurrentPosition() + 600 + offset) < 25) {
-                                complete = true;
-                                if (cooldown.time() >= 0.25) {
-                                    arm.setTargetPosition(arm.getCurrentPosition());
-                                    arm.setPower(0.0);
-                                    complete = false;
-                                    completed = true;
-                                    cooldown.reset();
-                                    //sweeper.setPower(1.0);
-                                    //engage = true;
-                                    newState(State.STATE_END);
+                        }
+                        else{
+                            if (sweeper.getCurrentPosition() >= 100) {
+                                double gain = (armPos + 500) / error;
+                                int target = (int) Math.round((gain * sweeper.getCurrentPosition()) - 500);
+                                if (target < -1100){
+                                    target = -1100;
                                 }
+                                arm.setTargetPosition(target - offset);
+                                arm.setPower(1.0);
                             }
-                            break;
-                    }
-                    break;
+                            else {
+                                arm.setTargetPosition(-500 - offset);
+                                arm.setPower(1.0);
+                            }
+                            arm_speed = 1.0;
+                            complete = false;
+                        }
+                        break;
+                    case STATE_CLEAR:
+                        if (Math.abs(arm.getCurrentPosition() + 600 + offset) < 25) {
+                            complete = true;
+                            if (cooldown.time() >= 0.25) {
+                                arm.setTargetPosition(arm.getCurrentPosition());
+                                arm.setPower(0.0);
+                                complete = false;
+                                completed = true;
+                                cooldown.reset();
+                                //sweeper.setPower(1.0);
+                                //engage = true;
+                                newState(State.STATE_END);
+                            }
+                        }
+                        break;
+                }
+                break;
 
-                case 2:
-                    if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 25) {
-                        complete = true;
-                        if (!g.dpad_left) {
-                            if (bstate) {
-                                back.setPosition(0.342);
-                            } else {
-                                back.setPosition(0.42);
-                            }
+            case 2:
+                if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 60) {
+                    complete = true;
+                    if (!g.dpad_left) {
+                        if (bstate) {
+                            back.setPosition(0.43); //todo: calibrate positions to drop filter
+                        } else {
+                            back.setPosition(0.377);
                         }
-                        if (cooldown.time() >= 1.0) {
-                            arm.setTargetPosition(arm.getCurrentPosition());
-                            arm.setPower(0.0);
-                            complete = false;
-                            completed = true;
-                            cooldown.reset();
-                        }
-                        //sweeper.setPower(1.0);
-                        //engage = true;
                     }
-                    else{
-                        arm.setTargetPosition(-1350 - offset);
-                        arm.setPower(-0.75);
-                        arm_speed = -0.75;
+                    if (cooldown.time() >= 0.1){
+                        sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                        sweeper.setPower(g.right_stick_y);
+                    }
+                    if (cooldown.time() >= 1.0) {
+                        arm.setTargetPosition(arm.getCurrentPosition());
+                        arm.setPower(0.0);
                         complete = false;
+                        completed = true;
+                        cooldown.reset();
                     }
-                    break;
-                case 3:
-                    if (Math.abs(arm.getCurrentPosition() + 1100 + offset) < 25) {
-                        complete = true;
-                        if (cooldown.time() >= 2.0) {
-                            arm.setTargetPosition(arm.getCurrentPosition());
-                            arm.setPower(0.0);
-                            complete = false;
-                            completed = true;
-                            cooldown.reset();
-                        }
-                        //sweeper.setPower(1.0);
-                        //engage = true;
+                    //sweeper.setPower(1.0);
+                    //engage = true;
+                }
+                else{
+                    arm.setTargetPosition(-1450 - offset);
+                    arm.setPower(-0.6);
+                    arm_speed = -0.6;
+                    complete = false;
+                }
+                break;
+            case 3:
+                if (Math.abs(arm.getCurrentPosition() + 1000 + offset) < 60) {
+                    complete = true;
+                    if (cooldown.time() >= 0.1){
+                        sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                        sweeper.setPower(g.right_stick_y);
                     }
-                    break;
-            }
+                    if (cooldown.time() >= 2.0) {
+                        arm.setTargetPosition(arm.getCurrentPosition());
+                        arm.setPower(0.0);
+                        complete = false;
+                        completed = true;
+                        cooldown.reset();
+                    }
+                    //sweeper.setPower(1.0);
+                    //engage = true;
+                }
+                else{
+                    if (!complete) {
+                        //back.setPosition(0.224);
+                    }
+                }
+                break;
+        }
         /*else if (g.right_stick_y == 0.0){
             arm.setPower(0.0);
         }*/
         //if (engage){
-            //sweeper.setPower(1.0);
+        //sweeper.setPower(1.0);
         //}
         if (!slide_automated){
             if (Math.abs(g.right_stick_y) != 0.0 || armTest()) {
@@ -707,7 +713,7 @@ public class Arm {
             else{
                 if (hold_time.time() >= 0.25 && !hold_first){
                     sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                    sweeper.setPower(0.0);
+                    sweeper.setPower(g.right_stick_y);
                 }
                 else if (hold_first){
                     sweeper.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -720,22 +726,15 @@ public class Arm {
         }
         if (clearTime.time() >= 0.125){
             if (g.dpad_left && !g.dpad_down){
-                //back.setPosition(0.6);
+                back.setPosition(0.5);
                 speed = 1.0;
             }
             else{
-                if (state != 1) {
+                if (state != 1){
                     if (bstate) {
-                        back.setPosition(0.342);
-                        if (false) {
-                            speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
-                        }
-                        else{
-                            speed = 0.5;
-                        }
+                        back.setPosition(0.43); //todo: calibrate positions to drop filter
                     } else {
-                        back.setPosition(0.342);
-                        speed = 0.9;
+                        back.setPosition(0.377);
                     }
                 }
             }
@@ -750,7 +749,7 @@ public class Arm {
         //arm.setPower(g.right_stick_y * 0.5);
 
         //if (isPress(g.dpad_down)){
-        if (isPress(g.dpad_right) && !g.dpad_left) {
+        if (isPress(g.dpad_down) && !g.dpad_left) {
             if (bstate) {
                 back.setPosition(0.342);
                 speed = 0.9;
@@ -795,20 +794,20 @@ public class Arm {
             state = 1;
         }
         else if (g.a){
-            if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 60){
+            if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 60){
                 //arm.setTargetPosition(arm.getCurrentPosition());
                 //arm.setPower(0.0);
                 complete = true;
             }
             else {
-                arm.setTargetPosition(-1350 - offset);
-                arm.setPower(-0.75);
-                arm_speed = -0.75;
+                arm.setTargetPosition(-1450 - offset);
+                arm.setPower(-0.6);
+                arm_speed = -0.6;
                 complete = false;
                 completed = false;
             }
             mTransferState = State.STATE_END;
-            filter.setPosition(0.786);
+            filter.setPosition(0.895);
             back.setPosition(0.342);
             sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             sweeper.setPower(g.right_stick_y);
@@ -834,12 +833,12 @@ public class Arm {
 
         if (mTransferState == State.STATE_CLEAR && arm.getCurrentPosition() < (-510 - offset) && (state == 1 || state == 0)){
             if (fState){
-                filter.setPosition(0.434);
+                filter.setPosition(0.469);
             }
         }
 
-        if (arm.getCurrentPosition() >= (-600 - offset) && state == 1){
-            back.setPosition(0.6);
+        if (arm.getCurrentPosition() >= (-700 - offset) && state == 1){
+            back.setPosition(0.5);
         }
         /*else{
             if (state == 2 && Math.abs(arm.getCurrentPosition() + 1450) > 25 && (back.getPosition() != 0.25 || back.getPosition() != 0.5)) {
@@ -911,7 +910,7 @@ public class Arm {
                         if (Math.abs(arm.getCurrentPosition() + 600 + offset) < 25) {
                             complete = true;
                             if (fState){
-                                filter.setPosition(0.487);
+                                filter.setPosition(0.469);
                             }
                             if (cooldown.time() >= 0.25) {
                                 arm.setTargetPosition(arm.getCurrentPosition());
@@ -929,7 +928,7 @@ public class Arm {
                 break;
 
             case 2:
-                if (Math.abs(arm.getCurrentPosition() + 1350 + offset) < 60) {
+                if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 60) {
                     complete = true;
                     if (!g.dpad_left) {
                         if (bstate) {
@@ -953,9 +952,9 @@ public class Arm {
                     //engage = true;
                 }
                 else{
-                    arm.setTargetPosition(-1350 - offset);
-                    arm.setPower(-0.75);
-                    arm_speed = -0.75;
+                    arm.setTargetPosition(-1450 - offset);
+                    arm.setPower(-0.6);
+                    arm_speed = -0.6;
                     complete = false;
                 }
                 break;
@@ -1013,22 +1012,15 @@ public class Arm {
         }
         if (clearTime.time() >= 0.125){
             if (g.dpad_left && !g.dpad_down){
-                //back.setPosition(0.6);
+                back.setPosition(0.6);
                 speed = 1.0;
             }
             else{
-                if (state != 1 && state != 3) {
+                if (state != 1) {
                     if (bstate) {
                         back.setPosition(0.342);
-                        if (false) {
-                            speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
-                        }
-                        else{
-                            speed = 0.5;
-                        }
                     } else {
                         back.setPosition(0.342);
-                        speed = 0.9;
                     }
                 }
             }

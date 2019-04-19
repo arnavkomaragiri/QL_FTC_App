@@ -27,7 +27,7 @@ public class spline_test extends OpMode {
     public void start(){
         drive.reset();
         t = drive.trajectoryBuilder()
-                .splineTo(new Pose2d(48, -48, Math.toRadians(270)))
+                .splineTo(new Pose2d(42.5, 30, Math.toRadians(80)))
                 .build();
         drive.followTrajectory(t);
     }

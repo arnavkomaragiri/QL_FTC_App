@@ -61,6 +61,8 @@ public class fourbot_tele extends OpMode{
     Two_Axis_Localizer localizer;
     boolean fState = false;
 
+    long previous_time = System.currentTimeMillis();
+
     double rot = 0.0;
 
     public void init(){
@@ -106,16 +108,16 @@ public class fourbot_tele extends OpMode{
         temp_tensioner.setPosition(0.0);
     }
     public void loop(){
-        if (isPress(gamepad2.dpad_left) && !gamepad2.dpad_up && !gamepad2.dpad_down){
-            fState = !fState;
-        }
-
-        if (!mode) {
-            drive.drive(gamepad1);
-        }
-        else{
-            drive.drive(gamepad1);
-        }
+        new Runnable(){
+            public void run(){
+                if (!mode) {
+                    drive.drive(gamepad1);
+                }
+                else{
+                    drive.drive(gamepad1);
+                }
+            }
+        }.run();
 
         if (false){
             if (mode){
@@ -133,9 +135,17 @@ public class fourbot_tele extends OpMode{
         }
 
         //hanger.operate(gamepad2, gamepad1);
-        arm.move(gamepad2, slide.getBox().getFilter(), fState);
+        new Runnable(){
+            public void run(){
+                arm.move(gamepad2);
+            }
+        }.run();
         //box.operate(gamepad2, arm.getBState());
-        slide.operate(gamepad2, arm.getBState(), fState, telemetry, gamepad1);
+        new Runnable(){
+            public void run(){
+                slide.operate(gamepad2, arm.getBState(), fState, telemetry, gamepad1);
+            }
+        }.run();
 
         if (gamepad1.right_bumper){
             marker.setPosition(0.3);
@@ -173,6 +183,8 @@ public class fourbot_tele extends OpMode{
         }*/
 
         telemetry.addData("Mode: ", !fState ? (arm.getBState() ? "SILVER" : "GOLD") : "MIX");
+        telemetry.addData("Cycle Time: ", System.currentTimeMillis() - previous_time);
+        previous_time = System.currentTimeMillis();
         telemetry.addData("Filter Pos: ", slide.getBox().getFilter().getPosition());
         telemetry.addData("X Pos: ", encoder.getDistance());
         telemetry.addData("Voltage: ", arm.getVoltage());

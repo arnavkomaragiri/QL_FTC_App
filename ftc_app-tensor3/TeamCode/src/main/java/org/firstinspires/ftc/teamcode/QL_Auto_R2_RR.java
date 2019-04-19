@@ -139,7 +139,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 slide.getHanger().drop();
                 telemetry.addData("Hang Pos: ", slide.getHanger().getHang().getCurrentPosition());
                 if (slide.getHanger().getHang().getCurrentPosition() < -5400){
-                    drive.engage();
+                    //drive.engage();
                     drive.reset();
                     newState(State.STATE_EXTEND);
                 }
@@ -156,10 +156,10 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 break;
             case STATE_IDLE:
-                if (mStateTime.time() >= 1.0){
+                if (mStateTime.time() >= 0.0){
                     drive.reset();
                     path = drive.trajectoryBuilder()
-                            .turnTo(Math.toRadians(30))
+                            .turnTo(Math.toRadians(20))
                             .build();
                     drive.followTrajectory(path);
                     newState(State.STATE_DELATCH2);
@@ -198,6 +198,7 @@ public class QL_Auto_R2_RR extends OpMode {
                     path = drive.trajectoryBuilder().turnTo(Math.toRadians(0)).build();
                     drive.followTrajectory(path);
                     newState(State.STATE_CENTER);
+                    first = true;
                 }
                 break;
             case STATE_CENTER:
@@ -212,13 +213,23 @@ public class QL_Auto_R2_RR extends OpMode {
                     }.run();
                 }
                 else{
+                    if (first){
+                        mStateTime.reset();
+                        first = false;
+                    }
+                    drive.engage();
+                    drive.reset();
                     drive.stop();
                     path = drive.trajectoryBuilder()
-                            .forward(10)
+                            .forward(8)
                             .build();
-                    drive.followTrajectory(path);
+                    //drive.followTrajectory(path);
                     drive.reset();
-                    newState(State.STATE_DRIVE_TO_DEPLOY);
+                    if (mStateTime.time() >= 1.0) {
+                        drive.reset();
+                        drive.followTrajectory(path);
+                        newState(State.STATE_DRIVE_TO_DEPLOY);
+                    }
                 }
                 break;
             case STATE_DRIVE_TO_DEPLOY:
@@ -236,8 +247,8 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 else{
                     path = drive.trajectoryBuilder()
-                            .back(10)
-                            .turnTo((1 - pos) * 45) //todo: tune the heading you turn to for samples :)
+                            .back(8)
+                            .turnTo(Math.toRadians((1 - pos) * 35)) //todo: tune the heading you turn to for samples :)
                             .build();
                     //drive.followTrajectory(path);
                     drive.stop();
@@ -246,15 +257,15 @@ public class QL_Auto_R2_RR extends OpMode {
                 if (arm.extend() && !drive.isFollowingTrajectory()){
                     arm.move(-1.0, 3, false);
                     path = drive.trajectoryBuilder()
-                            .back(10)
-                            .turnTo((1 - pos) * 45) //todo: tune the heading you turn to for samples :)
+                            .back(8)
+                            .turnTo(Math.toRadians((1 - pos) * 35)) //todo: tune the heading you turn to for samples :)
                             .build();
                     drive.stop();
                     newState(State.STATE_DEPLOY);
                 }
                 else{
-                    if (arm.getSweeper().getCurrentPosition() < 300) {
-                        arm.move(-1.0, 4, false);
+                    if (arm.getSweeper().getCurrentPosition() < 500) {
+                        arm.move(0.0, 4, false);
                     }
                     else{
                         arm.move(-1.0, 3, false);
@@ -263,8 +274,8 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_DEPLOY:
                 path = drive.trajectoryBuilder()
-                        .back(10)
-                        .turnTo((1 - pos) * 45)
+                        .back(8)
+                        .turnTo(Math.toRadians((1 - pos) * 35))
                         .build();
                 telemetry.addData("Retract Path: ", path.duration());
                 if (arm.extend(400) && mStateTime.time() >= 1.0){
@@ -277,6 +288,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 break;
             case STATE_RETRACT:
+                telemetry.addData("Error: ", drive.getFollowingError());
                 telemetry.addData("Arm Pos: ", arm.getSweeper().getCurrentPosition());
                 telemetry.addData("Drive Pos: ", drive.getEstimatedPose());
                 if (drive.isFollowingTrajectory()){
@@ -292,7 +304,6 @@ public class QL_Auto_R2_RR extends OpMode {
                     drive.stop();
                     path = drive.trajectoryBuilder()
                             .turnTo(0)
-                            .forward(2)
                             .build();
 
                     //newState(State.STATE_INTAKE_SAMPLE);
@@ -310,7 +321,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_INTAKE_SAMPLE:
                 telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
-                if (arm.extend(500) && mStateTime.time() >= 2.0){
+                if ((arm.getArm().getCurrentPosition() < -1200 && arm.extend(500)) && mStateTime.time() >= 2.0){
                     arm.move(1.0, 2, false);
                     drive.followTrajectory(path);
                     first = true;
@@ -339,7 +350,7 @@ public class QL_Auto_R2_RR extends OpMode {
                     drive.stop();
                 }
 
-                if (arm.getSweeper().getCurrentPosition() < 100 && arm.getArm().getCurrentPosition() > -550){
+                if (arm.getSweeper().getCurrentPosition() < 100 && arm.getArm().getCurrentPosition() > -550 && !drive.isFollowingTrajectory()){
                     arm.move(0.0, 4, false);
                     newState(State.STATE_DUMP);
                 }
