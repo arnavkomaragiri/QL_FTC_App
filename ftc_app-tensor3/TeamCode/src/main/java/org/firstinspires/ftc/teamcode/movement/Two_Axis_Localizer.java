@@ -157,6 +157,8 @@ public class Two_Axis_Localizer {
     public void reset(){
         x.reset();
         y.reset();
+        previous_x = 0.0;
+        previous_y = 0.0;
         pos = new Pose2d(0.0, 0.0, 0.0);
     }
 

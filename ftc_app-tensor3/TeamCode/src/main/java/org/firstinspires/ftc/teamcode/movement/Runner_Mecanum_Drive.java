@@ -110,6 +110,12 @@ public class Runner_Mecanum_Drive extends MecanumDrive {
         previous = new Pose2d();
     }
 
+    public void reset(Pose2d p){
+        drive.getPositioner().reset();
+        drive.getPositioner().setPose(-p.getY(), p.getX(), p.getHeading());
+        previous = p;
+    }
+
     @Override
     public double getExternalHeading(){
         return Math.toRadians((0.996864 * ((0.985697 * ((0.969219 * drive.getGyro().getHeading())) + 0.486599) - 0.662445)) + 0.182906);
@@ -147,7 +153,7 @@ public class Runner_Mecanum_Drive extends MecanumDrive {
 
     public boolean goTo(Pose2d p, double power, double r){
         Pose2d pos = getEstimatedPose();
-        double angle = Math.atan2(p.getY() - pos.getX(), p.getX() - pos.getY()) - pos.getHeading();
+        double angle = Math.atan2(-p.getY() - pos.getX(), p.getX() - pos.getY()) - pos.getHeading();
         if (p.pos().distanceTo(pos.pos()) < r){
             drive(0.0, 0.0, 0.0, 0.0);
             return true;

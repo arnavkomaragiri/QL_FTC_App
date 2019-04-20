@@ -156,6 +156,10 @@ public class Hanger {
         return result;
     }
 
+    public void extend_stop(){
+        extend.setPower(0.0);
+    }
+
     public void operate(Gamepad g, Gamepad g2){
         if (g2.x && matchTime.time() >= 3.0){
             hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);

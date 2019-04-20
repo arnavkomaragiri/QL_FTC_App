@@ -56,6 +56,8 @@ public class QL_Auto_R2_RR extends OpMode {
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
     private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
 
+    Pose2d memo = new Pose2d();
+
     public enum State{
         STATE_START,
         STATE_SCAN,
@@ -72,8 +74,11 @@ public class QL_Auto_R2_RR extends OpMode {
         STATE_TURN_TO_SAMPLE,
         STATE_INTAKE_SAMPLE,
         STATE_RETURN_TO_LANDER,
+        STATE_CENTER_TO_LANDER,
         STATE_DUMP,
         STATE_IDLE,
+        STATE_PREP_FOR_PARK,
+        STATE_SPLINE_TO_CRATER,
         STATE_STOP
     }
 
@@ -146,8 +151,13 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_EXTEND:
                 slide.getHanger().drop();
-                if (slide.getHanger().extend()){
-                    newState(State.STATE_IDLE);
+                if (slide.getHanger().extend() || mStateTime.time() >= 0.5){
+                    slide.getHanger().extend_stop();
+                    newState(State.STATE_DELATCH2);
+                    path = drive.trajectoryBuilder()
+                            .turnTo(Math.toRadians(30))
+                            .build();
+                    drive.followTrajectory(path);
                     drive.reset();
                     telemetry.addData("Extended: ", slide.getHanger().getExtend().getCurrentPosition());
                 }
@@ -156,13 +166,10 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 break;
             case STATE_IDLE:
-                if (mStateTime.time() >= 0.0){
-                    drive.reset();
-                    path = drive.trajectoryBuilder()
-                            .turnTo(Math.toRadians(20))
-                            .build();
+                if (mStateTime.time() >= 0.5){
+                    drive.reset(memo);
                     drive.followTrajectory(path);
-                    newState(State.STATE_DELATCH2);
+                    newState(State.STATE_SPLINE_TO_CRATER);
                 }
                 break;
             case STATE_DELATCH:
@@ -225,7 +232,7 @@ public class QL_Auto_R2_RR extends OpMode {
                             .build();
                     //drive.followTrajectory(path);
                     drive.reset();
-                    if (mStateTime.time() >= 1.0) {
+                    if (mStateTime.time() >= 0.5) {
                         drive.reset();
                         drive.followTrajectory(path);
                         newState(State.STATE_DRIVE_TO_DEPLOY);
@@ -247,8 +254,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 else{
                     path = drive.trajectoryBuilder()
-                            .back(8)
-                            .turnTo(Math.toRadians((1 - pos) * 35)) //todo: tune the heading you turn to for samples :)
+                            .back(10) //todo: tune the heading you turn to for samples :)
                             .build();
                     //drive.followTrajectory(path);
                     drive.stop();
@@ -257,8 +263,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 if (arm.extend() && !drive.isFollowingTrajectory()){
                     arm.move(-1.0, 3, false);
                     path = drive.trajectoryBuilder()
-                            .back(8)
-                            .turnTo(Math.toRadians((1 - pos) * 35)) //todo: tune the heading you turn to for samples :)
+                            .back(10) //todo: tune the heading you turn to for samples :)
                             .build();
                     drive.stop();
                     newState(State.STATE_DEPLOY);
@@ -274,8 +279,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_DEPLOY:
                 path = drive.trajectoryBuilder()
-                        .back(8)
-                        .turnTo(Math.toRadians((1 - pos) * 35))
+                        .back(10)//todo: tune the heading you turn to for samples :)
                         .build();
                 telemetry.addData("Retract Path: ", path.duration());
                 if (arm.extend(400) && mStateTime.time() >= 1.0){
@@ -303,7 +307,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 else{
                     drive.stop();
                     path = drive.trajectoryBuilder()
-                            .turnTo(0)
+                            .turnTo(Math.toRadians((1 - pos) * 30))
                             .build();
 
                     //newState(State.STATE_INTAKE_SAMPLE);
@@ -313,16 +317,49 @@ public class QL_Auto_R2_RR extends OpMode {
                 if (arm.extend(0) && !drive.isFollowingTrajectory()){
                     arm.move(1.0, 3, false);
                     //drive.stop();
-                    newState(State.STATE_INTAKE_SAMPLE);
+                    path = drive.trajectoryBuilder()
+                            .turnTo(Math.toRadians((1 - pos) * 30))
+                            .build();
+                    //memo = drive.getEstimatedPose();
+                    //drive.disengage();
+                    //drive.reset(memo);
+                    //drive.followTrajectory(path);
+                    first = true;
+                    newState(State.STATE_CENTER_TO_LANDER);
                 }
                 else{
                     arm.move(1.0, 3, false);
+                }
+                break;
+            case STATE_CENTER_TO_LANDER:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                if (true){//drive.goTo(new Pose2d(0, 0, 0), 0.3, 1)){
+                    drive.stop();
+                    memo = drive.getEstimatedPose();
+                    drive.disengage();
+                    drive.followTrajectory(path);
+                    newState(State.STATE_TURN_TO_SAMPLE);
+                }
+                break;
+            case STATE_TURN_TO_SAMPLE:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Error :", drive.getFollowingError());
+                if (drive.isFollowingTrajectory()){
+                    drive.updateFollower();
+                    //drive.reset(memo);
+                }
+                else{
+                    drive.stop();
+                    newState(State.STATE_INTAKE_SAMPLE);
                 }
                 break;
             case STATE_INTAKE_SAMPLE:
                 telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
                 if ((arm.getArm().getCurrentPosition() < -1200 && arm.extend(500)) && mStateTime.time() >= 2.0){
                     arm.move(1.0, 2, false);
+                    path = drive.trajectoryBuilder()
+                            .turnTo(0)
+                            .build();
                     drive.followTrajectory(path);
                     first = true;
                     newState(State.STATE_RETURN_TO_LANDER);
@@ -352,6 +389,8 @@ public class QL_Auto_R2_RR extends OpMode {
 
                 if (arm.getSweeper().getCurrentPosition() < 100 && arm.getArm().getCurrentPosition() > -550 && !drive.isFollowingTrajectory()){
                     arm.move(0.0, 4, false);
+                    //drive.engage();
+                    //drive.reset();
                     newState(State.STATE_DUMP);
                 }
                 else{
@@ -360,10 +399,42 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_DUMP:
                 drive.stop();
+                //drive.reset(memo);
                 if (mStateTime.time() >= 0.5) {
                     if (slide.dump(false, true, telemetry)) {
-                        newState(State.STATE_STOP);
+                        path = drive.trajectoryBuilder()
+                                .turnTo(Math.toRadians(60))
+                                .build();
+                        drive.followTrajectory(path);
+                        newState(State.STATE_PREP_FOR_PARK);
                     }
+                }
+                break;
+            case STATE_PREP_FOR_PARK:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Error: ", drive.getFollowingError());
+                if (drive.isFollowingTrajectory()){
+                    drive.updateFollower();
+                }
+                else{
+                    drive.stop();
+                    drive.engage();
+                    path = drive.trajectoryBuilder()
+                            .splineTo(new Pose2d(2 * Math.sqrt(2), 36 * Math.sqrt(2), Math.toRadians(125)))
+                            .build();
+                    //drive.followTrajectory(path);
+                    newState(State.STATE_IDLE);
+                }
+                break;
+            case STATE_SPLINE_TO_CRATER:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Error: ", drive.getFollowingError());
+                if (drive.isFollowingTrajectory()){
+                    drive.updateFollower();
+                }
+                else{
+                    drive.stop();
+                    newState(State.STATE_STOP);
                 }
                 break;
             case STATE_STOP:
