@@ -31,7 +31,7 @@ public class DriveConstants {
     public static double slippage_y = 0.6956;
     public static double slippage_x = 0.75648;
 
-    public static DriveConstraints BASE_CONSTRAINTS = new DriveConstraints(60.0, 30.0, Math.PI / 2, Math.PI / 2);
+    public static DriveConstraints BASE_CONSTRAINTS = new DriveConstraints(60.0, 40.0, Math.PI / 2, Math.PI / 2);
 
     public static double kV = 0.018;//0.01796875;//0.00776;
     public static double kA = 0;
