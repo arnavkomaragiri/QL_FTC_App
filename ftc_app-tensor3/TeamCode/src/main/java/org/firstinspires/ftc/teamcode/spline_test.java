@@ -14,6 +14,14 @@ public class spline_test extends OpMode {
     Box b;
     //FtcDashboard dash = FtcDashboard.getInstance();
     Trajectory t;
+    Trajectory t2;
+
+    private enum State{
+        STATE_TRAJECTORY1,
+        STATE_TRAJECTORY2
+    }
+
+    private State mRobotState = State.STATE_TRAJECTORY1;
 
     public void init(){
         b = new Box(hardwareMap);
@@ -27,16 +35,21 @@ public class spline_test extends OpMode {
     public void start(){
         drive.reset();
         t = drive.trajectoryBuilder()
-                .splineTo(new Pose2d(42.5, 30, Math.toRadians(80)))
+                .reverse()
+                .splineTo(new Pose2d(-12 * Math.sqrt(2), 24 * Math.sqrt(2), Math.toRadians(-90)))
+                .splineTo(new Pose2d(-24 * Math.sqrt(2), 48 * Math.sqrt(2), Math.toRadians(-45)))
                 .build();
+        /*t2 = drive.trajectoryBuilder()
+                .reverse()
+
+                .build();*/
         drive.followTrajectory(t);
     }
 
     public void loop(){
         if (drive.isFollowingTrajectory()) {
             drive.updateFollower();
-        }
-        else{
+        } else {
             drive.drive(0.0, 0.0, 0.0, 0.0);
         }
 

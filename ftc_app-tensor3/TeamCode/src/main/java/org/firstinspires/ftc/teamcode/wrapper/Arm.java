@@ -484,7 +484,7 @@ public class Arm {
     public void move(Gamepad g){
         if (isPress(g.dpad_down) && !g.dpad_left) {
             if (bstate) { //todo: tune positions to drop filter
-                back.setPosition(0.377);
+                back.setPosition(0.35);
                 bstate = false;
             } else {
                 back.setPosition(0.43);
@@ -649,7 +649,7 @@ public class Arm {
                         if (bstate) {
                             back.setPosition(0.43); //todo: calibrate positions to drop filter
                         } else {
-                            back.setPosition(0.377);
+                            back.setPosition(0.35);
                         }
                     }
                     if (cooldown.time() >= 0.1){
@@ -734,7 +734,7 @@ public class Arm {
                     if (bstate) {
                         back.setPosition(0.43); //todo: calibrate positions to drop filter
                     } else {
-                        back.setPosition(0.377);
+                        back.setPosition(0.35);
                     }
                 }
             }

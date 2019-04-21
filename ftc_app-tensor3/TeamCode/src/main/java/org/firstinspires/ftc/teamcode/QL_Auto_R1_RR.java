@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -19,6 +21,7 @@ import org.firstinspires.ftc.teamcode.wrapper.Arm;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
 import org.firstinspires.ftc.teamcode.wrapper.Slide;
 
+@Autonomous(name = "QL_Auto_R1_RR", group = "Competition RR")
 public class QL_Auto_R1_RR extends OpMode {
     Runner_Mecanum_Drive drive;
     Arm arm;
@@ -211,12 +214,12 @@ public class QL_Auto_R1_RR extends OpMode {
                     drive.stop();
                     if (pos != 1) {
                         path = drive.trajectoryBuilder()
-                                .splineTo(new Pose2d(24 * Math.sqrt(2), (1 - pos) * 12 * Math.sqrt(2), Math.toRadians((pos - 1) * 30)))
+                                .splineTo(new Pose2d(18 * Math.sqrt(2), (1 - pos) * (pos != 2 ? 8 : 12) * Math.sqrt(2), 0))
                                 .build();
                     }
                     else{
                         path = drive.trajectoryBuilder()
-                                .forward(24 * Math.sqrt(2))
+                                .forward(18 * Math.sqrt(2))
                                 .build();
                     }
                     //drive.followTrajectory(path);
@@ -237,20 +240,22 @@ public class QL_Auto_R1_RR extends OpMode {
                 else{
                     drive.stop();
                     first = true;
-                    arm.move(1.0, 2, true);
+                    //arm.move(1.0, 2, true);
                     newState(State.STATE_INTAKE);
                 }
                 break;
             case STATE_INTAKE:
                 telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
-                if (arm.extend()){
-                    if (first){
-                        mStateTime.reset();
-                        first = false;
-                    }
-                    if (mStateTime.time() >= 1.0){
-                        arm.move(-1.0, 1, true);
-                        newState(State.STATE_TRANSFER);
+                if (arm.getArm().getCurrentPosition() < -1100) {
+                    if (arm.extend(200)) {
+                        if (first) {
+                            mStateTime.reset();
+                            first = false;
+                        }
+                        if (mStateTime.time() >= 1.0) {
+                            arm.move(-1.0, 1, true);
+                            newState(State.STATE_TRANSFER);
+                        }
                     }
                 }
                 else{
@@ -259,16 +264,35 @@ public class QL_Auto_R1_RR extends OpMode {
                 break;
             case STATE_TRANSFER:
                 telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
-                if (arm.getArm().getCurrentPosition() < -550 && arm.getSweeper().getCurrentPosition() < 200){
+                if (arm.getArm().getCurrentPosition() < -550 && arm.getSweeper().getCurrentPosition() > 200){
                     arm.move(-1.0, 1, true);
                 }
                 else{
                     arm.move(0.0, 4, true);
-                    path = drive.trajectoryBuilder()
-                            .back(12 * Math.sqrt(2))
+                    TrajectoryBuilder temp = drive.trajectoryBuilder()
+                            .back((pos == 0 ? 6 : 8) * Math.sqrt(2))
                             .turnTo(Math.toRadians(-90))
-                            .splineTo(new Pose2d(0, 48 * Math.sqrt(2), Math.toRadians(45)))
+                            .reverse();
+                    if (pos != 0){
+                        temp = temp.splineTo(new Pose2d(8 * Math.sqrt(2), 11 * Math.sqrt(2), Math.toRadians(-90)));
+                    }
+                    path = temp.splineTo(new Pose2d(12 * Math.sqrt(2), 30 * Math.sqrt(2), Math.toRadians(-55)))
+                            .reverse()
+                            .strafeLeft(10)
+                            .back(36)
                             .build();
+                    /*path = drive.trajectoryBuilder()
+                            .back((pos == 0 ? 6 : 8) * Math.sqrt(2))
+                            .turnTo(Math.toRadians(-90))
+                            .reverse()
+                            .splineTo(new Pose2d(12 * Math.sqrt(2), 30 * Math.sqrt(2), Math.toRadians(-55)))
+                            .reverse()
+                            .strafeLeft(10)
+                            .back(36)
+                            //.reverse()
+                            //.splineTo(new Pose2d(12 * Math.sqrt(2), 24 * Math.sqrt(2), Math.toRadians(-90)))
+                            //.splineTo(new Pose2d(0, 48 * Math.sqrt(2), Math.toRadians(-40)))
+                            .build();*/
                     drive.followTrajectory(path);
                     newState(State.STATE_SPLINE_TO_DEPOT);
                 }
@@ -283,7 +307,7 @@ public class QL_Auto_R1_RR extends OpMode {
                     drive.stop();
                     tm.setPosition(0.0);
                     path = drive.trajectoryBuilder()
-                            .forward(72)
+                            .forward(50)
                             .build();
                     first = true;
                     newState(State.STATE_PARK);
@@ -310,16 +334,21 @@ public class QL_Auto_R1_RR extends OpMode {
             case STATE_STOP:
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
                 telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
-                if (arm.getArm().getCurrentPosition() < -1300 && arm.extend()){
+                if (arm.getArm().getCurrentPosition() < -1000 && arm.extend()){
                     arm.getArm().setPower(0.0);
                 }
                 else{
-                    arm.move(0.0, 2, true);
+                    arm.move(0.0, 3, true);
                 }
                 drive.stop();
                 drive.disengage();
                 break;
         }
+    }
+
+    public void stop(){
+        tfod.deactivate();
+        tfod.shutdown();
     }
 
     public void newState(State s){
