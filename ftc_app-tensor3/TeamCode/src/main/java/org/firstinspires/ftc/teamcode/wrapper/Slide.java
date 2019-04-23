@@ -70,27 +70,26 @@ public class Slide {
         double final_time = 0.0;
 
         if (isPress(g.left_bumper)){
-            if (Math.abs(g.right_stick_y) <= 0.5){// && inBounds(hanger.getExtend().getCurrentPosition())) {
-                busy = true;
-                newState(State.STATE_LIFT);
-            }
+            busy = true;
+            newState(State.STATE_LIFT);
         }
         else if (!busy){
             box.operate(g, (alt != bState));
             hanger.operate(g, g2);
         }
-        if (Math.abs(g.right_stick_y) > 0.5 && busy){
+        if ((g.dpad_up || g.dpad_right) && busy){
             box.init();
             hanger.getExtend().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             hanger.getExtend().setPower(0.0);
             busy = false;
             first = true;
+            hanger.setFirst(true);
             newState(State.STATE_END);
         }
 
         switch (mRobotState){
             case STATE_LIFT:
-                if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : 200)){
+                if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : (bState ? 200 : 350))){
                     rate = hanger.getExtend().getCurrentPosition() / mStateTime.time();
                     predicted_time = (1000 - hanger.getExtend().getCurrentPosition()) / rate;
                     predicted_time += mStateTime.time();
@@ -111,14 +110,15 @@ public class Slide {
                         final_time = box_time;
                     }
                 }
-                t.addData("Time: ", final_time);
-                t.addData("Offset: ", time_offset);
-                if (hanger.cycle(1100, 950) && mStateTime.time() >= final_time + 0.25){
+                //t.addData("Time: ", final_time);
+                //t.addData("Offset: ", time_offset);
+                if (hanger.cycle(1100, 1100) && mStateTime.time() >= final_time){
                     newState(State.STATE_CONTRACT);
                 }
                 break;
             case STATE_CONTRACT:
-                box.init();
+                box.e_init();
+                t.addData("Caught In State Contract: ", mStateTime.time());
                 if (hanger.contract()){
                     newState(State.STATE_END);
                     busy = false;
@@ -127,7 +127,7 @@ public class Slide {
                 break;
         }
 
-        if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : 200) && busy && mRobotState != State.STATE_CONTRACT){
+        if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : (bState ? 200 : 350)) && busy && mRobotState != State.STATE_CONTRACT){
             if (alt) {
                 box.flip(!bState);
             }
@@ -280,12 +280,7 @@ public class Slide {
         }
 
         if (hanger.getExtend().getCurrentPosition() >= (box.getSecured() ? 500 : 200) && busy && mRobotState != State.STATE_CONTRACT){
-            if (alt) {
-                box.flip(!bState, fState);
-            }
-            else{
-                box.flip(bState, fState);
-            }
+            box.flip(bState);
         }
 
         return result;
@@ -303,9 +298,6 @@ public class Slide {
         boolean result = false;
         if (!previous[0] && input){
             result = true;
-        }
-        else{
-            result = false;
         }
         previous[0] = input;
         return result;

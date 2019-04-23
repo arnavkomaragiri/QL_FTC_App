@@ -2,13 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
-import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import java.util.*;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -19,15 +17,20 @@ import org.firstinspires.ftc.teamcode.movement.DriveConstants;
 import org.firstinspires.ftc.teamcode.movement.Runner_Mecanum_Drive;
 import org.firstinspires.ftc.teamcode.wrapper.Arm;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
+import org.firstinspires.ftc.teamcode.wrapper.Hanger;
 import org.firstinspires.ftc.teamcode.wrapper.Slide;
 
-@Autonomous(name = "QL_Auto_R1_RR", group = "Competition RR")
-public class QL_Auto_R1_RR extends OpMode {
+import java.util.List;
+import java.util.PriorityQueue;
+
+@Autonomous(name = "QL_Auto_R2_Live", group = "Competition RR")
+public class QL_Auto_R2_Live extends OpMode {
     Runner_Mecanum_Drive drive;
     Arm arm;
     Slide slide;
     Servo tm;
     Trajectory path;
+    long previous_time = System.currentTimeMillis();
 
     int pos = -1;
     boolean first = true;
@@ -51,7 +54,14 @@ public class QL_Auto_R1_RR extends OpMode {
     State mRobotState = State.STATE_START;
     ElapsedTime mStateTime = new ElapsedTime();
 
-    private enum State{
+
+    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
+    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
+    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
+
+    Pose2d memo = new Pose2d();
+
+    public enum State{
         STATE_START,
         STATE_SCAN,
         STATE_SCAN2,
@@ -61,20 +71,23 @@ public class QL_Auto_R1_RR extends OpMode {
         STATE_DELATCH2,
         STATE_CONTRACT,
         STATE_CENTER,
-        STATE_SPLINE_TO_SAMPLE,
+        STATE_DRIVE_TO_DEPLOY,
+        STATE_DEPLOY,
+        STATE_RETRACT,
+        STATE_TURN_TO_SAMPLE,
+        STATE_INTAKE_SAMPLE,
+        STATE_RETURN_TO_LANDER,
+        STATE_CENTER_TO_LANDER,
+        STATE_DUMP,
+        STATE_IDLE,
+        STATE_SPLINE_TO_CRATER,
         STATE_INTAKE,
         STATE_TRANSFER,
-        STATE_SPLINE_TO_DEPOT,
+        STATE_SPLINE_TO_LANDER,
+        STATE_DEPOSIT,
         STATE_PARK,
         STATE_STOP
     }
-
-
-    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
-    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
-    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
-
-    Pose2d memo = new Pose2d();
 
     public void init(){
         drive = new Runner_Mecanum_Drive();
@@ -86,7 +99,7 @@ public class QL_Auto_R1_RR extends OpMode {
         slide.getBox().compress();
         g = new Gimbel(hardwareMap);
         tm = hardwareMap.get(Servo.class, "tm");
-        tm.setPosition(0.6);
+        tm.setPosition(1.0);
         slide.getHanger().getHang().setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide.getHanger().getHang().setTargetPosition(slide.getHanger().getHang().getCurrentPosition());
         slide.getHanger().getHang().setPower(1.0);
@@ -100,7 +113,7 @@ public class QL_Auto_R1_RR extends OpMode {
     }
 
     public void loop(){
-        switch (mRobotState) {
+        switch (mRobotState){
             case STATE_START:
                 telemetry.addData("Entering Auto", "1");
                 tfod.activate();
@@ -113,9 +126,10 @@ public class QL_Auto_R1_RR extends OpMode {
                 }
                 pos = getPos();
                 telemetry.addData("Pos: ", pos);
-                if (pos != -1) {
+                if (pos != -1){
                     newState(State.STATE_SCAN2);
-                } else if (mStateTime.time() >= 10.0) {
+                }
+                else if (mStateTime.time() >= 10.0){
                     pos = 1;
                     newState(State.STATE_SCAN2);
                 }
@@ -127,7 +141,7 @@ public class QL_Auto_R1_RR extends OpMode {
 
                 telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
                 telemetry.addData("Arm Target: ", arm.getArm().getTargetPosition());
-                if (arm.getArm().getCurrentPosition() < -600) {
+                if (arm.getArm().getCurrentPosition() < -600){
                     arm.setExit(false);
                     slide.getBox().e_init();
                     slide.getHanger().getHang().setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -138,7 +152,7 @@ public class QL_Auto_R1_RR extends OpMode {
             case STATE_DROP:
                 slide.getHanger().drop();
                 telemetry.addData("Hang Pos: ", slide.getHanger().getHang().getCurrentPosition());
-                if (slide.getHanger().getHang().getCurrentPosition() < -5400) {
+                if (slide.getHanger().getHang().getCurrentPosition() < -5400){
                     //drive.engage();
                     drive.reset();
                     newState(State.STATE_EXTEND);
@@ -146,7 +160,7 @@ public class QL_Auto_R1_RR extends OpMode {
                 break;
             case STATE_EXTEND:
                 slide.getHanger().drop();
-                if (slide.getHanger().extend() || mStateTime.time() >= 0.5) {
+                if (slide.getHanger().extend() || mStateTime.time() >= 0.5){
                     slide.getHanger().extend_stop();
                     newState(State.STATE_DELATCH2);
                     path = drive.trajectoryBuilder()
@@ -155,8 +169,16 @@ public class QL_Auto_R1_RR extends OpMode {
                     drive.followTrajectory(path);
                     drive.reset();
                     telemetry.addData("Extended: ", slide.getHanger().getExtend().getCurrentPosition());
-                } else {
+                }
+                else{
                     telemetry.addData("Extending: ", slide.getHanger().getExtend().getCurrentPosition());
+                }
+                break;
+            case STATE_IDLE:
+                drive.reset();
+                if (mStateTime.time() >= 2.0){
+                    //drive.followTrajectory(path);
+                    newState(State.STATE_STOP);
                 }
                 break;
             case STATE_DELATCH:
@@ -165,9 +187,10 @@ public class QL_Auto_R1_RR extends OpMode {
                 /*if (drive.goTo(new Pose2d(0, 0.5, 0), 0.4, 1)) {
                     newState(State.STATE_DELATCH2);
                 }*/
-                if (drive.isFollowingTrajectory()) {
+                if (drive.isFollowingTrajectory()){
                     drive.updateFollower();
-                } else {
+                }
+                else{
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     newState(State.STATE_CENTER);
                 }
@@ -175,9 +198,10 @@ public class QL_Auto_R1_RR extends OpMode {
             case STATE_DELATCH2:
                 slide.getHanger().drop();
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
-                if (drive.isFollowingTrajectory()) {
+                if (drive.isFollowingTrajectory()){
                     drive.updateFollower();
-                } else {
+                }
+                else{
                     drive.drive(0.0, 0.0, 0.0, 0.0);
                     slide.getHanger().contract();
                     newState(State.STATE_CONTRACT);
@@ -185,7 +209,7 @@ public class QL_Auto_R1_RR extends OpMode {
                 break;
             case STATE_CONTRACT:
                 drive.stop();
-                if (slide.getHanger().contract()) {
+                if (slide.getHanger().contract()){
                     drive.stop();
                     path = drive.trajectoryBuilder().turnTo(Math.toRadians(0)).build();
                     drive.followTrajectory(path);
@@ -195,7 +219,6 @@ public class QL_Auto_R1_RR extends OpMode {
                 break;
             case STATE_CENTER:
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
-                telemetry.addData("Vertical Pos: ", slide.getHanger().getExtend().getCurrentPosition());
                 //slide.getHanger().contract();
                 if (drive.isFollowingTrajectory()) {
                     new Runnable() {
@@ -204,58 +227,217 @@ public class QL_Auto_R1_RR extends OpMode {
                             drive.updateFollower();
                         }
                     }.run();
-                } else {
-                    if (first) {
+                }
+                else{
+                    if (first){
                         mStateTime.reset();
                         first = false;
                     }
                     drive.engage();
                     drive.reset();
                     drive.stop();
-                    if (pos != 1) {
-                        path = drive.trajectoryBuilder()
-                                .splineTo(new Pose2d(18 * Math.sqrt(2), (1 - pos) * (pos != 2 ? 8 : 12) * Math.sqrt(2), 0))
-                                .build();
-                    }
-                    else{
-                        path = drive.trajectoryBuilder()
-                                .forward(18 * Math.sqrt(2))
-                                .build();
-                    }
+                    path = drive.trajectoryBuilder()
+                            .forward(10)
+                            .build();
                     //drive.followTrajectory(path);
                     drive.reset();
                     if (mStateTime.time() >= 0.5) {
                         drive.reset();
                         drive.followTrajectory(path);
-                        newState(State.STATE_SPLINE_TO_SAMPLE);
+                        newState(State.STATE_DRIVE_TO_DEPLOY);
                     }
                 }
                 break;
-            case STATE_SPLINE_TO_SAMPLE:
+            case STATE_DRIVE_TO_DEPLOY:
+                telemetry.addData("State: ", "Drive to Deposit");
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Extend Pos: ", arm.getSweeper().getCurrentPosition());
+                slide.getBox().e_init();
+                if (drive.isFollowingTrajectory()) {
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            drive.updateFollower();
+                        }
+                    }.run();
+                }
+                else{
+                    path = drive.trajectoryBuilder()
+                            .back(12) //todo: tune the heading you turn to for samples :)
+                            .build();
+                    //drive.followTrajectory(path);
+                    drive.stop();
+                    //newState(State.STATE_STOP);
+                }
+                if (arm.extend() && !drive.isFollowingTrajectory()){
+                    arm.move(-1.0, 3, false);
+                    path = drive.trajectoryBuilder()
+                            .back(12) //todo: tune the heading you turn to for samples :)
+                            .build();
+                    drive.stop();
+                    newState(State.STATE_DEPLOY);
+                }
+                else{
+                    if (arm.getSweeper().getCurrentPosition() < 500) {
+                        arm.move(0.0, 4, false);
+                    }
+                    else{
+                        arm.move(-1.0, 3, false);
+                    }
+                }
+                break;
+            case STATE_DEPLOY:
+                path = drive.trajectoryBuilder()
+                        .back(12)//todo: tune the heading you turn to for samples :)
+                        .forward((pos == 1) ? 2 : 0)
+                        .build();
+                telemetry.addData("Retract Path: ", path.duration());
+                if (mStateTime.time() >= 0.5){
+                    //arm.move(-1.0, 1, false);
+                    drive.followTrajectory(path);
+                    newState(State.STATE_RETRACT);
+                }
+                else{
+                    arm.move(-1.0, 3, false);
+                }
+                break;
+            case STATE_RETRACT:
+                telemetry.addData("Error: ", drive.getFollowingError());
+                telemetry.addData("Arm Pos: ", arm.getSweeper().getCurrentPosition());
+                telemetry.addData("Drive Pos: ", drive.getEstimatedPose());
+                if (drive.isFollowingTrajectory()){
+                    //arm.move(-1.0, 1, false);
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            drive.updateFollower();
+                        }
+                    }.run();
+                }
+                else{
+                    drive.stop();
+                    path = drive.trajectoryBuilder()
+                            .turnTo(Math.toRadians((1 - pos) * 30))
+                            .build();
+
+                    //newState(State.STATE_INTAKE_SAMPLE);
+                    //arm.move(1.0, 2, false);
+                    //newState(State.STATE_STOP);
+                }
+                if (arm.extend(0) && !drive.isFollowingTrajectory()){
+                    arm.move(1.0, 3, false);
+                    //drive.stop();
+                    path = drive.trajectoryBuilder()
+                            .turnTo(Math.toRadians((1 - pos) * 30))
+                            .build();
+                    //memo = drive.getEstimatedPose();
+                    //drive.disengage();
+                    //drive.reset(memo);
+                    //drive.followTrajectory(path);
+                    first = true;
+                    newState(State.STATE_CENTER_TO_LANDER);
+                }
+                else{
+                    arm.move(1.0, 3, false);
+                }
+                break;
+            case STATE_CENTER_TO_LANDER:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                if (true){//drive.goTo(new Pose2d(0, 0, 0), 0.3, 1)){
+                    drive.stop();
+                    memo = drive.getEstimatedPose();
+                    drive.disengage();
+                    drive.followTrajectory(path);
+                    newState(State.STATE_TURN_TO_SAMPLE);
+                }
+                break;
+            case STATE_TURN_TO_SAMPLE:
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
                 telemetry.addData("Error :", drive.getFollowingError());
+                if (drive.isFollowingTrajectory()){
+                    drive.updateFollower();
+                    //drive.reset(memo);
+                }
+                else{
+                    drive.stop();
+                    newState(State.STATE_INTAKE_SAMPLE);
+                }
+                break;
+            case STATE_INTAKE_SAMPLE:
+                telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
+                if ((arm.getArm().getCurrentPosition() < -1200 && arm.extend(500)) && mStateTime.time() >= 2.0){
+                    arm.move(1.0, 2, false);
+                    path = drive.trajectoryBuilder()
+                            .turnTo(0)
+                            .build();
+                    drive.followTrajectory(path);
+                    first = true;
+                    newState(State.STATE_RETURN_TO_LANDER);
+                }
+                else{
+                    arm.move(1.0, 2, false);
+                }
+                break;
+            case STATE_RETURN_TO_LANDER:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
+                if (drive.isFollowingTrajectory()){
+                    if (first) {
+                        arm.move(1.0, 1, false);
+                        first = false;
+                    }
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            drive.updateFollower();
+                        }
+                    }.run();
+                }
+                else{
+                    drive.stop();
+                }
+
+                if (arm.getSweeper().getCurrentPosition() < 100 && arm.getArm().getCurrentPosition() > -550 && !drive.isFollowingTrajectory()){
+                    arm.move(0.0, 4, false);
+                    drive.engage();
+                    //drive.reset();
+                    newState(State.STATE_DUMP);
+                }
+                else{
+                    arm.move(1.0, 1, false);
+                }
+                break;
+            case STATE_DUMP:
+                drive.stop();
+                drive.reset(memo);
+                if (mStateTime.time() >= 0.5) {
+                    if (slide.dump(false, true, telemetry)) {
+                        drive.stop();
+                        path = drive.trajectoryBuilder()
+                                .splineTo(new Pose2d(Math.sqrt(2), 36 * Math.sqrt(2), Math.toRadians(130)))
+                                .build();
+                        drive.followTrajectory(path);
+                        newState(State.STATE_SPLINE_TO_CRATER);
+                    }
+                }
+                break;
+            case STATE_SPLINE_TO_CRATER:
+                telemetry.addData("Pos: ", drive.getEstimatedPose());
+                telemetry.addData("Error: ", drive.getFollowingError());
                 if (drive.isFollowingTrajectory()){
                     drive.updateFollower();
                 }
                 else{
                     drive.stop();
-                    first = true;
-                    //arm.move(1.0, 2, true);
+                    arm.move(1.0, 2, true);
                     newState(State.STATE_INTAKE);
                 }
                 break;
             case STATE_INTAKE:
-                telemetry.addData("Slide Pos: ", arm.getSweeper().getCurrentPosition());
-                if (arm.getArm().getCurrentPosition() < -1100) {
-                    if (arm.extend(200)) {
-                        if (first) {
-                            mStateTime.reset();
-                            first = false;
-                        }
-                        if (mStateTime.time() >= 1.0) {
-                            arm.move(-1.0, 1, true);
-                            newState(State.STATE_TRANSFER);
-                        }
+                if (arm.getArm().getCurrentPosition() < -1300){
+                    if (arm.extend(300)){
+                        arm.move(-1.0, 1, true);
+                        newState(State.STATE_TRANSFER);
                     }
                 }
                 else{
@@ -263,41 +445,19 @@ public class QL_Auto_R1_RR extends OpMode {
                 }
                 break;
             case STATE_TRANSFER:
-                telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
-                if (arm.getArm().getCurrentPosition() < -550 && arm.getSweeper().getCurrentPosition() > 200){
-                    arm.move(-1.0, 1, true);
+                if (arm.getArmPos() > -550){
+                    path = drive.trajectoryBuilder()
+                            .reverse()
+                            .splineTo(new Pose2d(3, 5, Math.toRadians(30)))
+                            .build();
+                    drive.followTrajectory(path);
+                    newState(State.STATE_SPLINE_TO_LANDER);
                 }
                 else{
-                    arm.move(0.0, 4, true);
-                    TrajectoryBuilder temp = drive.trajectoryBuilder()
-                            .back((pos == 0 ? 6 : 8) * Math.sqrt(2))
-                            .turnTo(Math.toRadians(-90))
-                            .reverse();
-                    if (pos != 0){
-                        temp = temp.splineTo(new Pose2d(8 * Math.sqrt(2), 11 * Math.sqrt(2), Math.toRadians(-90)));
-                    }
-                    path = temp.splineTo(new Pose2d(12 * Math.sqrt(2), 30 * Math.sqrt(2), Math.toRadians(-55)))
-                            .reverse()
-                            .strafeLeft(10)
-                            .back(36)
-                            .build();
-                    /*path = drive.trajectoryBuilder()
-                            .back((pos == 0 ? 6 : 8) * Math.sqrt(2))
-                            .turnTo(Math.toRadians(-90))
-                            .reverse()
-                            .splineTo(new Pose2d(12 * Math.sqrt(2), 30 * Math.sqrt(2), Math.toRadians(-55)))
-                            .reverse()
-                            .strafeLeft(10)
-                            .back(36)
-                            //.reverse()
-                            //.splineTo(new Pose2d(12 * Math.sqrt(2), 24 * Math.sqrt(2), Math.toRadians(-90)))
-                            //.splineTo(new Pose2d(0, 48 * Math.sqrt(2), Math.toRadians(-40)))
-                            .build();*/
-                    drive.followTrajectory(path);
-                    newState(State.STATE_SPLINE_TO_DEPOT);
+                    arm.move(-1.0, 1, true);
                 }
                 break;
-            case STATE_SPLINE_TO_DEPOT:
+            case STATE_SPLINE_TO_LANDER:
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
                 telemetry.addData("Error: ", drive.getFollowingError());
                 if (drive.isFollowingTrajectory()){
@@ -305,57 +465,50 @@ public class QL_Auto_R1_RR extends OpMode {
                 }
                 else{
                     drive.stop();
-                    tm.setPosition(0.0);
+                    newState(State.STATE_DEPOSIT);
+                }
+                break;
+            case STATE_DEPOSIT:
+                drive.stop();
+                if (slide.dump(false, false, telemetry)){
                     path = drive.trajectoryBuilder()
-                            .forward(50)
+                            .splineTo(new Pose2d(12 * Math.sqrt(2), 24 * Math.sqrt(2), Math.toRadians(85)))
                             .build();
-                    first = true;
+                    drive.followTrajectory(path);
                     newState(State.STATE_PARK);
                 }
                 break;
             case STATE_PARK:
                 telemetry.addData("Pos: ", drive.getEstimatedPose());
                 telemetry.addData("Error: ", drive.getFollowingError());
-                if (mStateTime.time() >= 1.0){
-                    if (first){
-                        drive.followTrajectory(path);
-                        first = false;
-                    }
-                    if (drive.isFollowingTrajectory()){
-                        drive.updateFollower();
-                    }
-                    else{
-                        drive.stop();
-                        arm.move(0.0, 2, true);
-                        newState(State.STATE_STOP);
-                    }
-                }
-                arm.extend();
-                arm.move(0.0, 3, true);
-                break;
-            case STATE_STOP:
-                telemetry.addData("Pos: ", drive.getEstimatedPose());
-                telemetry.addData("Arm Pos: ", arm.getArm().getCurrentPosition());
-                if (arm.getArm().getCurrentPosition() < -1000 && arm.extend()){
-                    arm.getArm().setPower(0.0);
+                if (drive.isFollowingTrajectory()){
+                    drive.updateFollower();
                 }
                 else{
-                    arm.move(0.0, 3, true);
+                    drive.stop();
+                    newState(State.STATE_STOP);
                 }
+                break;
+            case STATE_STOP:
+                telemetry.addData("FIRST TRY!!!!", drive.getEstimatedPose());
+                arm.move(0.0, 3, false);
+                arm.extend();
                 drive.stop();
-                drive.disengage();
+                tfod.deactivate();
                 break;
         }
+        telemetry.addData("Cycle Time: ", System.currentTimeMillis() - previous_time);
+        previous_time = System.currentTimeMillis();
     }
 
     public void stop(){
-        tfod.deactivate();
         tfod.shutdown();
     }
 
-    public void newState(State s){
-        mRobotState = s;
+    public void newState(State arg){
+        mRobotState = arg;
         mStateTime.reset();
+        drive.stop();
     }
 
     private void initVuforia() {
@@ -373,6 +526,9 @@ public class QL_Auto_R1_RR extends OpMode {
         // Loading trackables is not necessary for the Tensor Flow Object Detection engine.
     }
 
+    /**
+     * Initialize the Tensor Flow Object Detection engine.
+     */
     private void initTfod() {
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());

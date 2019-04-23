@@ -54,6 +54,8 @@ public class Mecanum_Drive{
 
     private boolean first = true;
 
+    private double speed = 0.9;
+
     public Mecanum_Drive(DcMotor names[], ModernRoboticsI2cGyro gyro, Tracker_Wheel odometer){
         motors = names.clone();
         /*for (DcMotor motor : motors){
@@ -164,10 +166,13 @@ public class Mecanum_Drive{
     public void drive(Gamepad gamepad1) {
         double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
         r = Math.pow(r, 2);
+        r *= speed;
         drive_power = r;
         double angle = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
         double rightX = gamepad1.right_stick_x;
         double rightY = gamepad1.right_stick_y;
+        rightX *= 0.6;
+        rightY *= 0.6;
 
         robotHeading = angle;
         double robotAngle = angle - Math.PI / 4;

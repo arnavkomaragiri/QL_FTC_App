@@ -38,6 +38,8 @@ public class Arm {
     private boolean exit = false;
     private boolean extended = false;
 
+    private boolean lock = false;
+
     private boolean slide_automated = false;
     private double error = 0.0;
     private int armPos = 0;
@@ -108,6 +110,7 @@ public class Arm {
         this.intake_right = hardwareMap.get(CRServo.class, "intake_right");
         this.intake_right.setDirection(CRServo.Direction.REVERSE);
         this.back = new QL_Servo(hardwareMap.get(Servo.class, "back"));
+        this.back.setPosition(0.43);
     }
 
     public Arm(DcMotor sweeper, DcMotor arm, Servo back, boolean alt){
@@ -172,18 +175,12 @@ public class Arm {
         //arm.setPower(g.right_stick_y * 0.5);
 
         //if (isPress(g.dpad_down)){
-        if (!bstate) {
-            back.setPosition((exit ? 0.43 : 0.342));
-            speed = 0.9;
-        } else {
-            back.setPosition(0.342);
-            if (false) {
-                speed = Range.clip((0.35 * 14.00) / voltage.getVoltage(), 0, 1);
+        if (getArmPos() < -700 - offset) {
+            if (!b_state) {
+                back.setPosition((exit ? 0.43 : 0.35));
+            } else {
+                back.setPosition(0.43);
             }
-            else{
-                speed = 0.5;
-            }
-            bstate = true;
         }
         //toggle.reset();
         //}
@@ -482,7 +479,7 @@ public class Arm {
     }
     
     public void move(Gamepad g){
-        if (isPress(g.dpad_down) && !g.dpad_left) {
+        if (isPress(g.dpad_down) && !g.dpad_left && !g.right_stick_button) {
             if (bstate) { //todo: tune positions to drop filter
                 back.setPosition(0.35);
                 bstate = false;
@@ -517,6 +514,7 @@ public class Arm {
             if (mTransferState == State.STATE_END) {
                 newState(State.STATE_TRANSFER);
             }
+            lock = false;
             state = 1;
         }
         else if (g.a){
@@ -533,9 +531,11 @@ public class Arm {
                 completed = false;
             }
             mTransferState = State.STATE_END;
+            slide_automated = false;
             sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             sweeper.setPower(g.right_stick_y);
             state = 2;
+            lock = false;
         }
         else if (g.x){
             if (Math.abs(arm.getCurrentPosition() + 1000 + offset) < 10){
@@ -544,15 +544,17 @@ public class Arm {
                 complete = true;
             }
             else {
-                arm.setTargetPosition(-1000 - offset);
+                arm.setTargetPosition(-1100 - offset);
                 arm.setPower(0.7);
                 complete = false;
                 completed = false;
             }
             mTransferState = State.STATE_END;
+            slide_automated = false;
             sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             sweeper.setPower(g.right_stick_y);
             state = 3;
+            lock = false;
         }
 
         if (arm.getCurrentPosition() >= (-650 - offset) && state == 1){
@@ -589,12 +591,10 @@ public class Arm {
                 }*/
                 switch (mTransferState) {
                     case STATE_TRANSFER:
-                        if (Math.abs(arm.getCurrentPosition() + 500 + offset) < 25){// && Math.abs(sweeper.getCurrentPosition()) < 25) {
+                        if (Math.abs(arm.getCurrentPosition() + 500 + offset) < 50){// && Math.abs(sweeper.getCurrentPosition()) < 25) {
                             complete = true;
-                            if (cooldown.time() >= 0.1){
-                                sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                                sweeper.setPower(g.right_stick_y);
-                            }
+                            sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                            sweeper.setPower(g.right_stick_y);
                             if (cooldown.time() >= 1.5) {
                                 arm.setTargetPosition(-600 - offset);
                                 arm.setPower(1.0);
@@ -607,7 +607,7 @@ public class Arm {
                             }
                         }
                         else{
-                            if (sweeper.getCurrentPosition() >= 100) {
+                            if (sweeper.getCurrentPosition() >= 50 && !lock) {
                                 double gain = (armPos + 500) / error;
                                 int target = (int) Math.round((gain * sweeper.getCurrentPosition()) - 500);
                                 if (target < -1100){
@@ -619,12 +619,14 @@ public class Arm {
                             else {
                                 arm.setTargetPosition(-500 - offset);
                                 arm.setPower(1.0);
+                                lock = true;
                             }
                             arm_speed = 1.0;
                             complete = false;
                         }
                         break;
                     case STATE_CLEAR:
+                        lock = false;
                         if (Math.abs(arm.getCurrentPosition() + 600 + offset) < 25) {
                             complete = true;
                             if (cooldown.time() >= 0.25) {
@@ -638,11 +640,14 @@ public class Arm {
                                 newState(State.STATE_END);
                             }
                         }
+                        sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                        sweeper.setPower(g.right_stick_y);
                         break;
                 }
                 break;
 
             case 2:
+                lock = false;
                 if (Math.abs(arm.getCurrentPosition() + 1450 + offset) < 60) {
                     complete = true;
                     if (!g.dpad_left) {
@@ -672,9 +677,12 @@ public class Arm {
                     arm_speed = -0.6;
                     complete = false;
                 }
+                sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                sweeper.setPower(g.right_stick_y);
                 break;
             case 3:
-                if (Math.abs(arm.getCurrentPosition() + 1000 + offset) < 60) {
+                lock = false;
+                if (Math.abs(arm.getCurrentPosition() + 1100 + offset) < 60) {
                     complete = true;
                     if (cooldown.time() >= 0.1){
                         sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -695,6 +703,8 @@ public class Arm {
                         //back.setPosition(0.224);
                     }
                 }
+                sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                sweeper.setPower(g.right_stick_y);
                 break;
         }
         /*else if (g.right_stick_y == 0.0){
@@ -703,7 +713,7 @@ public class Arm {
         //if (engage){
         //sweeper.setPower(1.0);
         //}
-        if (!slide_automated){
+        /*if (!slide_automated){
             if (Math.abs(g.right_stick_y) != 0.0 || armTest()) {
                 hold_time.reset();
                 hold_first = true;
@@ -723,11 +733,14 @@ public class Arm {
                     hold_first = false;
                 }
             }
-        }
+        }*/
         if (clearTime.time() >= 0.125){
-            if (g.dpad_left && !g.dpad_down){
+            if (g.dpad_left && !g.dpad_down && !g.right_stick_button){
                 back.setPosition(0.5);
                 speed = 1.0;
+            }
+            else if (g.right_stick_button && !g.dpad_down && !g.dpad_left){
+                back.setPosition(0.1);
             }
             else{
                 if (state != 1){

@@ -18,6 +18,7 @@ public class Box {
     boolean alt = false;
     boolean[] previous = {false, false, false};
     boolean secured = false;
+    double correction = 0.02778;
     ElapsedTime cooldown = new ElapsedTime();
     ElapsedTime cooldown2 = new ElapsedTime();
 
@@ -44,14 +45,14 @@ public class Box {
     }
 
     public void init(){
-        box_left.setPosition(0.8875); //0.85
-        box_right.setPosition(0.1125); //0.15
+        box_left.setPosition(0.85); //0.85
+        box_right.setPosition(0.15 - correction); //0.15
         filter.setPosition(0.316);
     }
 
     public void e_init(){
         box_left.setPosition(0.85); //0.85
-        box_right.setPosition(0.15); //0.15
+        box_right.setPosition(0.15 - correction); //0.15
         filter.setPosition(0.895);
     }
 
@@ -69,12 +70,12 @@ public class Box {
         if (bState){
             //box_left.setPosition(0.075);
             //box_right.setPosition(0.925);
-            box_left.setPosition(0.175);
-            box_right.setPosition(0.825);
+            box_left.setPosition(0.06);
+            box_right.setPosition(0.94 - correction);
         }
         else{
             box_left.setPosition(0.175);
-            box_right.setPosition(0.825);
+            box_right.setPosition(0.825 - correction);
         }
         secured = false;
     }
@@ -85,18 +86,18 @@ public class Box {
 
     public void flip(boolean bState, boolean fState){
         if (bState && !fState){
-            box_left.setPosition(0.0);
-            box_right.setPosition(1.0);
+            box_left.setPosition(0.06);
+            box_right.setPosition(0.94 - correction);
             //box_left.setPosition(0.175);
             //box_right.setPosition(0.825);
         }
         else if (!bState && !fState){
             box_left.setPosition(0.175);
-            box_right.setPosition(0.825);
+            box_right.setPosition(0.825 - correction);
         }
         else{
             box_left.setPosition(0.175);
-            box_right.setPosition(0.825);
+            box_right.setPosition(0.825 - correction);
         }
         if (!fState){
             filter.setPosition(0.316);
@@ -109,7 +110,7 @@ public class Box {
 
     public void secure(){
         box_left.setPosition(0.6);
-        box_right.setPosition(0.4);
+        box_right.setPosition(0.4 - correction);
         if (filter.getPosition() != 0.434) {
             //filter.setPosition(0.316);
         }
@@ -118,7 +119,7 @@ public class Box {
 
     public void secure(boolean fState){
         box_left.setPosition(0.6);
-        box_right.setPosition(0.4);
+        box_right.setPosition(0.4 - correction);
         if (fState){
             filter.setPosition(0.469);
         }

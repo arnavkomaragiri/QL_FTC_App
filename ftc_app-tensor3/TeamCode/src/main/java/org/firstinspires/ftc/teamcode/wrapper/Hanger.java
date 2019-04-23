@@ -26,6 +26,10 @@ public class Hanger {
     private State mDiagnosticState = State.STATE_EXTEND;
     private ElapsedTime mStateTime = new ElapsedTime();
 
+    public void setFirst(boolean first){
+        this.first = first;
+    }
+
     private enum State{
         STATE_EXTEND,
         STATE_CONTRACT,
@@ -113,7 +117,7 @@ public class Hanger {
         extend.setTargetPosition(pos);
         extend.setPower(1.0);
 
-        if (Math.abs(extend.getCurrentPosition() - pos) < 10){
+        if (Math.abs(extend.getCurrentPosition() - pos) < 100){
             extend.setTargetPosition(extend.getCurrentPosition());
             extend.setPower(0.0);
             extend.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -305,6 +309,7 @@ public class Hanger {
             jam.reset();
             extend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             extend.setTargetPosition(target);
+            extend.setPower(1.0);
             first = false;
         }
         if (Math.abs(extend.getCurrentPosition()) >= Math.abs(ceiling) || Math.abs(extend.getCurrentPosition() - ceiling) <= 100){

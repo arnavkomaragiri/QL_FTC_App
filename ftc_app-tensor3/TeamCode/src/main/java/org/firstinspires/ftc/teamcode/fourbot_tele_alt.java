@@ -32,7 +32,7 @@ public class fourbot_tele_alt extends OpMode{
     Box box;
     Servo backboard;
     Slide slide;
-    //Servo marker;
+    Servo marker;
     boolean flip = false;
     boolean mode = false;
     boolean flip2 = false;
@@ -42,6 +42,7 @@ public class fourbot_tele_alt extends OpMode{
     Pose2d pose = new Pose2d(0, 0, 0);
     Gimbel g;
     Tracker_Wheel wheel;
+    private long previous_time = System.currentTimeMillis();
 
     public void init(){
         motors[0] = hardwareMap.dcMotor.get("up_left");
@@ -56,7 +57,7 @@ public class fourbot_tele_alt extends OpMode{
         sweeper = hardwareMap.get(DcMotor.class, "sweeper");
 
         backboard =  hardwareMap.get(Servo.class, "back");
-        //marker = hardwareMap.get(Servo.class, "tm");
+        marker = hardwareMap.get(Servo.class, "tm");
         slide = new Slide(hardwareMap);
         slide.setAlt(true);
 
@@ -65,7 +66,7 @@ public class fourbot_tele_alt extends OpMode{
         box.setAlt(true);
         //marker.setPosition(0.3);
 
-        arm = new Arm(sweeper, arm1, backboard, hardwareMap.voltageSensor.get("Motor Controller 2"));
+        arm = new Arm(hardwareMap);
         g = new Gimbel(hardwareMap);
         g.GoTo(0.5, 0);
 
@@ -75,16 +76,10 @@ public class fourbot_tele_alt extends OpMode{
 
     public void start(){
         telemetry.addData("LEGGO BOYS MAX 2 USUALLY 3: ", "idk what to put here");
-        //marker.setPosition(1.0);
+        marker.setPosition(1.0);
     }
     public void loop(){
-        if (!drive.getGyro().isCalibrating()) {
-            if (!mode) {
-                drive.f_drive(gamepad1);
-            } else {
-                drive.f_drive(gamepad1);
-            }
-        }
+        drive.drive(gamepad1);
 
         if (false){
             if (mode){
@@ -127,14 +122,19 @@ public class fourbot_tele_alt extends OpMode{
             marker.setPosition(0.8);
         }*/
 
+        telemetry.addData("Mode: ", arm.getBState() ? "SILVER" : "GOLD");
+        telemetry.addData("Cycle Time: ", System.currentTimeMillis() - previous_time);
+        previous_time = System.currentTimeMillis();
+        /*telemetry.addData("Filter Pos: ", slide.getBox().getFilter().getPosition());
+        telemetry.addData("X Pos: ", encoder.getDistance());
         telemetry.addData("Voltage: ", arm.getVoltage());
         telemetry.addData("Mode: ", (mode ? "Field Centric" : "Robot Centric"));
         telemetry.addData("Odometer: ", drive.getOdoDistance());
-        telemetry.addData("Delta Distance: ", drive.getG_distance());
+        telemetry.addData("Delta Distance: ", drive.getG_distance());*/
         telemetry.addData("Arm Pos: ", arm.getArmPos());
-        telemetry.addData("Wheel Pos: ", arm.getSweeper().getCurrentPosition());
-        telemetry.addData("Slide Pos: ", hanger.getExtend().getCurrentPosition());
-        telemetry.addData("Extend Pos: ", hanger.getHang().getCurrentPosition());
+        telemetry.addData("Sweeper Pos: ", arm.getSweeper().getCurrentPosition());
+        //telemetry.addData("Slide Pos: ", hanger.getExtend().getCurrentPosition());
+        /*telemetry.addData("Extend Pos: ", hanger.getHang().getCurrentPosition());
         telemetry.addData("Backboard Pos: ", arm.getBack().getPosition());
         telemetry.addData("Angle:", Math.toDegrees(drive.getRobotHeading()));
         telemetry.addData("Up Left: ", Double.toString(motors[0].getPower()));
@@ -148,7 +148,7 @@ public class fourbot_tele_alt extends OpMode{
         telemetry.addData("Min: ", drive.getMinimumDistance());
         for (int i = 0; i < 4; i++){
             telemetry.addData("Pos: ", Double.toString((3 * drive.getMotors()[i].getCurrentPosition())));
-        }
+        }*/
     }
     private void logMessage( String sMsgHeader, String sMsg)
     {

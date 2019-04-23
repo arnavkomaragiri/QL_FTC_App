@@ -259,7 +259,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 }
                 else{
                     path = drive.trajectoryBuilder()
-                            .back(10) //todo: tune the heading you turn to for samples :)
+                            .back(12) //todo: tune the heading you turn to for samples :)
                             .build();
                     //drive.followTrajectory(path);
                     drive.stop();
@@ -268,23 +268,24 @@ public class QL_Auto_R2_RR extends OpMode {
                 if (arm.extend() && !drive.isFollowingTrajectory()){
                     arm.move(-1.0, 3, false);
                     path = drive.trajectoryBuilder()
-                            .back(10) //todo: tune the heading you turn to for samples :)
+                            .back(12) //todo: tune the heading you turn to for samples :)
                             .build();
                     drive.stop();
                     newState(State.STATE_DEPLOY);
                 }
                 else{
-                    if (arm.getSweeper().getCurrentPosition() < 500) {
+                    if (arm.getSweeper().getCurrentPosition() < 300) {
                         arm.move(0.0, 4, false);
+
                     }
                     else{
-                        arm.move(-1.0, 3, false);
+                        arm.move(-1.0, 4, false);
                     }
                 }
                 break;
             case STATE_DEPLOY:
                 path = drive.trajectoryBuilder()
-                        .back(10)//todo: tune the heading you turn to for samples :)
+                        .back(12)//todo: tune the heading you turn to for samples :)
                         .forward((pos == 1) ? 2 : 0)
                         .build();
                 telemetry.addData("Retract Path: ", path.duration());
@@ -313,7 +314,7 @@ public class QL_Auto_R2_RR extends OpMode {
                 else{
                     drive.stop();
                     path = drive.trajectoryBuilder()
-                            .turnTo(Math.toRadians((1 - pos) * 30))
+                            .turnTo(Math.toRadians((1 - pos) * 35))
                             .build();
 
                     //newState(State.STATE_INTAKE_SAMPLE);
@@ -324,7 +325,7 @@ public class QL_Auto_R2_RR extends OpMode {
                     arm.move(1.0, 3, false);
                     //drive.stop();
                     path = drive.trajectoryBuilder()
-                            .turnTo(Math.toRadians((1 - pos) * 30))
+                            .turnTo(Math.toRadians((1 - pos) * 35))
                             .build();
                     //memo = drive.getEstimatedPose();
                     //drive.disengage();
@@ -425,7 +426,8 @@ public class QL_Auto_R2_RR extends OpMode {
                 else{
                     drive.stop();
                     path = drive.trajectoryBuilder()
-                            .splineTo(new Pose2d(Math.sqrt(2), 34 * Math.sqrt(2), Math.toRadians(130)))
+                            .splineTo(new Pose2d(4 * Math.sqrt(2), 36 * Math.sqrt(2), Math.toRadians(130)))
+                            .strafeRight(6)
                             .build();
                     drive.followTrajectory(path);
                     newState(State.STATE_SPLINE_TO_CRATER);
@@ -444,7 +446,8 @@ public class QL_Auto_R2_RR extends OpMode {
                 break;
             case STATE_STOP:
                 telemetry.addData("FIRST TRY!!!!", drive.getEstimatedPose());
-                arm.move(0.0, 2, false);
+                arm.move(1.0, (arm.getSweeper().getCurrentPosition() > 200 ? 2 : 3), false);
+                arm.extend();
                 drive.stop();
                 tfod.deactivate();
                 break;

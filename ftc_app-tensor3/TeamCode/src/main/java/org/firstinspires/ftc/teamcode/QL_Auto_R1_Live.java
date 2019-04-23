@@ -21,8 +21,8 @@ import org.firstinspires.ftc.teamcode.wrapper.Arm;
 import org.firstinspires.ftc.teamcode.wrapper.Gimbel;
 import org.firstinspires.ftc.teamcode.wrapper.Slide;
 
-@Autonomous(name = "QL_Auto_R1_RR", group = "Competition RR")
-public class QL_Auto_R1_RR extends OpMode {
+@Autonomous(name = "QL_Auto_R1_Live", group = "Competition RR")
+public class QL_Auto_R1_Live extends OpMode {
     Runner_Mecanum_Drive drive;
     Arm arm;
     Slide slide;

@@ -143,7 +143,7 @@ public class fourbot_tele extends OpMode{
         //box.operate(gamepad2, arm.getBState());
         new Runnable(){
             public void run(){
-                slide.operate(gamepad2, arm.getBState(), fState, telemetry, gamepad1);
+                slide.operate(gamepad2, arm.getBState(), telemetry, gamepad1);
             }
         }.run();
 
@@ -185,16 +185,16 @@ public class fourbot_tele extends OpMode{
         telemetry.addData("Mode: ", !fState ? (arm.getBState() ? "SILVER" : "GOLD") : "MIX");
         telemetry.addData("Cycle Time: ", System.currentTimeMillis() - previous_time);
         previous_time = System.currentTimeMillis();
-        telemetry.addData("Filter Pos: ", slide.getBox().getFilter().getPosition());
+        /*telemetry.addData("Filter Pos: ", slide.getBox().getFilter().getPosition());
         telemetry.addData("X Pos: ", encoder.getDistance());
         telemetry.addData("Voltage: ", arm.getVoltage());
         telemetry.addData("Mode: ", (mode ? "Field Centric" : "Robot Centric"));
         telemetry.addData("Odometer: ", drive.getOdoDistance());
-        telemetry.addData("Delta Distance: ", drive.getG_distance());
+        telemetry.addData("Delta Distance: ", drive.getG_distance());*/
         telemetry.addData("Arm Pos: ", arm.getArmPos());
         telemetry.addData("Sweeper Pos: ", arm.getSweeper().getCurrentPosition());
-        telemetry.addData("Slide Pos: ", hanger.getExtend().getCurrentPosition());
-        telemetry.addData("Extend Pos: ", hanger.getHang().getCurrentPosition());
+        //telemetry.addData("Slide Pos: ", hanger.getExtend().getCurrentPosition());
+        /*telemetry.addData("Extend Pos: ", hanger.getHang().getCurrentPosition());
         telemetry.addData("Backboard Pos: ", arm.getBack().getPosition());
         telemetry.addData("Angle:", Math.toDegrees(drive.getRobotHeading()));
         telemetry.addData("Up Left: ", Double.toString(motors[0].getPower()));
@@ -208,7 +208,7 @@ public class fourbot_tele extends OpMode{
         telemetry.addData("Min: ", drive.getMinimumDistance());
         for (int i = 0; i < 4; i++){
             telemetry.addData("Pos: ", Double.toString((3 * drive.getMotors()[i].getCurrentPosition())));
-        }
+        }*/
     }
 
     private void logMessage( String sMsgHeader, String sMsg)
